@@ -5,6 +5,8 @@ from copy import deepcopy
 class GraphTSP:
     def __init__(self, graph):
         self.graph = graph
+        self.all_pairs_dist, self.all_pairs_prev = self.precompute_all_pairs()
+
 
     def dijkstra(self, start):
         # mark each distance as infinity
@@ -52,8 +54,9 @@ class GraphTSP:
 
         # while there are still unvisited houses to deliver
         while unvisited:
-            # run djikstras from this node
-            distances, prev = self.dijkstra(current)
+            # find the distance
+            distances = self.all_pairs_dist[current]
+            prev = self.all_pairs_prev[current]
             # find all the reachabled targets
             reachable_targets = [x for x in unvisited if distances[x] < float('inf')]
             if not reachable_targets:
@@ -67,8 +70,9 @@ class GraphTSP:
             current = next_node
 
         # return to the PostOffice
-        # find djikstras path
-        distances, prev = self.dijkstra(current)
+        # get the path
+        distances = self.all_pairs_dist[current]
+        prev = self.all_pairs_prev[current]
         # check in case there is not a path to raise an error if so
         if distances[start] < float('inf'):
             segment = self.reconstruct_path(prev, current, start)
@@ -83,12 +87,16 @@ class GraphTSP:
         for i in range(len(route)-1):
             # sum the path
             start, end = route[i], route[i+1]
-            distances, _ = self.dijkstra(start)
-            total += distances[end]
+            # find the shortest paths
+            # we are using djikstra to find the shortest connected path
+            # in case there is not a direct path
+            # pick the one to the end - the distance between the two nodes 
+            # start is the current node and end is the next node
+            total += self.all_pairs_dist[start][end]
         return total
 
     def two_opt(self, route):
-
+        # sometimes, two lines cross each other — that’s a sign the route could be shorter if you just flip the middle section.
         improved = True
         best_route = deepcopy(route)
         best_distance = self.total_distance(best_route)
@@ -97,7 +105,9 @@ class GraphTSP:
             improved = False
             # look at every possible pair of edges, swap them, and see if the route becomes shorter
             # repeat only until there is improvement
+            # start from 1 not 0 and not till the end
             for i in range(1, len(best_route) - 2):
+                # the next node
                 for j in range(i + 1, len(best_route) - 1):
                     new_route = self.swap_2opt(best_route, i, j)
                     new_distance = self.total_distance(new_route)
@@ -107,6 +117,15 @@ class GraphTSP:
                         best_distance = new_distance
                         improved = True
         return best_route
+    
+    def precompute_all_pairs(self):
+        all_dist = {}
+        all_prev = {}
+        for node in self.graph:
+            dist, prev = self.dijkstra(node)
+            all_dist[node] = dist
+            all_prev[node] = prev
+        return all_dist, all_prev
 
     def swap_2opt(self, route, i, j):
         # this helper function reverses the section between indices i and j in the route.
