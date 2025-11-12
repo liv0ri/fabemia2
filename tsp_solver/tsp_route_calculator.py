@@ -57,10 +57,10 @@ def main():
         'H7': {'H4': 6, 'H8': 2, 'H10': 4},
         'H8': {'H5': 5, 'H7': 2, 'H9': 3},
         'H9': {'H6': 3, 'H8': 3, 'H10': 2},
-        'H10': {'H7': 4, 'H9': 2, 'PostOffice': 7}
+        'H10': {'H7': 4, 'H9': 2}
     }
 
-    targets = ['H2', 'H5', 'H8', 'H10']  # houses to visit -> WILL BE SOMEHOW PASSED TO HERE
+    targets = ['H2', 'H5', 'H10', 'H8']  # houses to visit -> WILL BE SOMEHOW PASSED TO HERE
     node = TSPRouteService(graph, targets)
     rclpy.spin(node)
     rclpy.shutdown()

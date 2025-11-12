@@ -4,13 +4,14 @@ from copy import deepcopy
 
 class GraphTSP:
     def __init__(self, graph):
+        # store the graph
         self.graph = graph
+        # precompute all distance and previous node
         self.all_pairs_dist, self.all_pairs_prev = self.precompute_all_pairs()
 
-
     def dijkstra(self, start):
-        # mark each distance as infinity
-        # dictionary of shortest distances to every node.
+        # dictionary to hold the shortest distances to every node
+        # set to infinity to show that they are unreachable
         dist = {node: float('inf') for node in self.graph}
         # dictionary to reconstruct the path.
         prev = {node: None for node in self.graph}
@@ -41,11 +42,14 @@ class GraphTSP:
         path.reverse()
         if path[0] == start:
             return path
-        return []  # No valid path
+        # this would mean no valid path is found
+        return []
     
     def nearest_neighbour_tsp(self, start, targets):
         # The brain of the robot
+        # the unvisited are just the targets
         unvisited = set(targets)
+        # in case start in unvisited
         if start in unvisited:
             unvisited.remove(start)
 
@@ -59,6 +63,7 @@ class GraphTSP:
             prev = self.all_pairs_prev[current]
             # find all the reachabled targets
             reachable_targets = [x for x in unvisited if distances[x] < float('inf')]
+            # each path is reachable but this is mainly done as a way to show that we have a mistake in the graph
             if not reachable_targets:
                 raise ValueError(f"No reachable targets remaining from {current}")
             # pick the nearest unvisited node along graph
@@ -88,7 +93,6 @@ class GraphTSP:
             # sum the path
             start, end = route[i], route[i+1]
             # find the shortest paths
-            # we are using djikstra to find the shortest connected path
             # in case there is not a direct path
             # pick the one to the end - the distance between the two nodes 
             # start is the current node and end is the next node
@@ -96,7 +100,7 @@ class GraphTSP:
         return total
 
     def two_opt(self, route):
-        # sometimes, two lines cross each other — that’s a sign the route could be shorter if you just flip the middle section.
+        # sometimes, two lines cross each other — that’s a sign the route could be shorter if you just flip the middle section
         improved = True
         best_route = deepcopy(route)
         best_distance = self.total_distance(best_route)
@@ -121,6 +125,7 @@ class GraphTSP:
     def precompute_all_pairs(self):
         all_dist = {}
         all_prev = {}
+        # find all the shortest paths and the nodes for it 
         for node in self.graph:
             dist, prev = self.dijkstra(node)
             all_dist[node] = dist
