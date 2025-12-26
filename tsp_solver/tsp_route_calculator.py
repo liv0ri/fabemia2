@@ -41,6 +41,7 @@ class TSPRouteServer(Node):
 
 def main():
     rclpy.init()
+    TURN_DISTANCE = 2.0
     # graph = {
     #     'PostOffice': {'H1': 2, 'H2': 3},
     #     'H1': {'PostOffice': 2, 'H2': 1},
@@ -56,21 +57,84 @@ def main():
     #     # ['PostOffice', 'H1', 'H2', 'H3', 'H1', 'H2', 'PostOffice']
 
     # }
+
+    # graph = {
+    #     'PostOffice': {'H1': 4, 'H2': 6, 'H3': 8, 'H4': 5},
+    #     'H1': {'PostOffice': 4, 'H2': 2, 'H5': 7, 'H6': 3},
+    #     'H2': {'PostOffice': 6, 'H1': 2, 'H3': 4, 'H5': 5, 'H7': 6},
+    #     'H3': {'PostOffice': 8, 'H2': 4, 'H4': 3, 'H6': 6, 'H8': 5},
+    #     'H4': {'PostOffice': 5, 'H3': 3, 'H7': 4, 'H8': 6},
+    #     'H5': {'H1': 7, 'H2': 5, 'H6': 4, 'H9': 8},
+    #     'H6': {'H1': 3, 'H3': 6, 'H5': 4, 'H7': 5, 'H10': 6},
+    #     'H7': {'H2': 6, 'H4': 4, 'H6': 5, 'H8': 3, 'H1': 5},
+    #     'H8': {'H3': 5, 'H4': 6, 'H7': 3, 'H9': 4, 'H2': 7},
+    #     'H9': {'H5': 8, 'H8': 4, 'H10': 3},
+    #     'H10': {'H6': 6, 'H9': 3},
+    # }
+
     graph = {
-        'PostOffice': {'H1': 4, 'H2': 6, 'H3': 8, 'H4': 5},
-        'H1': {'PostOffice': 4, ''H2': 2, 'H5': 7, 'H6': 3},
-        'H2': {'PostOffice': 6, 'H1': 2, 'H3': 4, 'H5': 5, 'H7': 6},
-        'H3': {'PostOffice': 8, 'H2': 4, 'H4': 3, 'H6': 6, 'H8': 5},
-        'H4': {'PostOffice': 5, 'H3': 3, 'H7': 4, 'H8': 6},
-        'H5': {'H1': 7, 'H2': 5, 'H6': 4, 'H9': 8},
-        'H6': {'H1': 3, 'H3': 6, 'H5': 4, 'H7': 5, 'H10': 6},
-        'H7': {'H2': 6, 'H4': 4, 'H6': 5, 'H8': 3, 'H1': 5},
-        'H8': {'H3': 5, 'H4': 6, 'H7': 3, 'H9': 4, 'H2': 7},
-        'H9': {'H5': 8, 'H8': 4, 'H10': 3},
-        'H10': {'H6': 6, 'H9': 3},
+        'PO': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'CHARGER_0': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_1': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_2': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_3': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_4': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'CHARGER_1': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_5': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_6': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_7': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_8': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_9': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'HOUSE_10': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
+
+        'CHARGER_2': { 'PO': 0, 'HOUSE_1': 4, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
+               'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
+               'CHARGER_0': 0, 'CHARGER_1': 0, 'CHARGER_2': 1},
     }
 
+    # Full path: ['PostOffice', 'H4', 'H3', 'H6', 'H10', 'H6', 'H1', 'PostOffice']
+    targets = ['H10', 'H6', 'H4']
     targets = ['H4', 'H6', 'H10']
+    targets = ['H6', 'H4', 'H10']
+
     # houses to visit -> WILL BE SOMEHOW PASSED TO HERE
     node = TSPRouteServer(graph, targets)
     rclpy.spin(node)
