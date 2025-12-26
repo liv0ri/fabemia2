@@ -163,23 +163,23 @@ def main():
 
         'HOUSE_2': {
             'HOUSE_1':  LEFT + 5 + RIGHT + 2 + LEFT + 5 + RIGHT,
-            'HOUSE_3':  LEFT + 5 + LEFT + 1 + RIGHT,
+            'HOUSE_3':  LEFT + 5 + RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 8 + LEFT,
-            'HOUSE_5':  (2*LEFT) + 4 + RIGHT + 2 + RIGHT,
-            'HOUSE_6':  (2*LEFT) + 6 + LEFT,
-            'HOUSE_7':  (2*LEFT) + 12 + RIGHT + 11 + LEFT,
+            'HOUSE_5':  (2*LEFT) + 3 + RIGHT + 2 + RIGHT,
+            'HOUSE_6':  (2*LEFT) + 5 + LEFT,
+            'HOUSE_7':  LEFT + 11 + LEFT + 11,
             'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 5 + LEFT + 5 + RIGHT + 3 + RIGHT,
-            'HOUSE_9':  (2*LEFT) + 12 + RIGHT + 2 + LEFT,
+            'HOUSE_9':  (2*LEFT) + 11 + RIGHT + 2 + LEFT,
             'HOUSE_10': (2*LEFT) + 3 + RIGHT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
             'PO':       LEFT + 11 + LEFT + 3 + RIGHT,
             'CHARGER_0': LEFT + 11 + LEFT + 4 + RIGHT,
             'CHARGER_1': LEFT + 3 + RIGHT,
-            'CHARGER_2': (2*LEFT) + 12 + RIGHT + 5 + LEFT
+            'CHARGER_2': (2*LEFT) + 11 + RIGHT + 5 + LEFT
         },
 
         'HOUSE_3': {
             'HOUSE_1':   LEFT + 1 + LEFT + 5 + RIGHT,
-            'HOUSE_2':   RIGHT + 1 + RIGHT + 5 + LEFT,
+            'HOUSE_2':   RIGHT + 1 + LEFT + 5 + LEFT,
             'HOUSE_4':   RIGHT + 1 + RIGHT + 3 + RIGHT,
             'HOUSE_5':  RIGHT + 1 + LEFT + 1 + RIGHT + 3 + LEFT + 2 + LEFT,
             'HOUSE_6':  RIGHT + 1 + LEFT + 6 +  RIGHT + 5 + LEFT,
@@ -195,7 +195,7 @@ def main():
 
         'HOUSE_4': {
             'HOUSE_1':  RIGHT + 3 + RIGHT + 2 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  RIGHT + 8 + RIGHT,
+            'HOUSE_2':  LEFT + 8 + LEFT,
             'HOUSE_3':  LEFT + 3 + LEFT + 1 + LEFT,
             'HOUSE_5':  LEFT + 3 + RIGHT + 3 + LEFT + 2,
             'HOUSE_6':  RIGHT + 8 + RIGHT + 5 + LEFT,
@@ -211,7 +211,7 @@ def main():
 
         'HOUSE_5': {
             'HOUSE_1':  LEFT + 2 + RIGHT + 3 + LEFT+ 1 + RIGHT + 2 + LEFT + 5 + RIGHT,
-            'HOUSE_2':  (2*LEFT) + 2 + LEFT + 4 + LEFT,
+            'HOUSE_2':  RIGHT + 2 + LEFT + 3,
             'HOUSE_3':  LEFT + 2 + RIGHT + 3 + LEFT + 1 + RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 2 + RIGHT + 3 + LEFT + 3 + LEFT,
             'HOUSE_6':  RIGHT + 2 + RIGHT + 2 + LEFT,
@@ -227,7 +227,7 @@ def main():
 
         'HOUSE_6': {
             'HOUSE_1':  LEFT + 5 + LEFT + 5 + LEFT + 2 + LEFT + 5 + RIGHT,
-            'HOUSE_2':  LEFT + 6,
+            'HOUSE_2':  LEFT + 5,
             'HOUSE_3':  LEFT + 5 + RIGHT + 6 +  LEFT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 5 + LEFT + 8 + LEFT,
             'HOUSE_5':  LEFT + 2 + LEFT + 2 + RIGHT,
@@ -243,7 +243,7 @@ def main():
 
         'HOUSE_7': {
             'HOUSE_1':  (2*LEFT) + 13 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  (2*LEFT) + 11 + LEFT + 12 + RIGHT,
+            'HOUSE_2':  (2*LEFT) + 11 + RIGHT + 11 + LEFT,
             'HOUSE_3':  (2*LEFT) + 11 + RIGHT + 7 + LEFT + 1 + RIGHT,
             'HOUSE_4':  (2*LEFT) + 11 + RIGHT + 3 + RIGHT,
             'HOUSE_5':  (2*LEFT) + 9 + RIGHT + 8 + RIGHT,
@@ -275,7 +275,7 @@ def main():
 
         'HOUSE_9': {
             'HOUSE_1':  RIGHT + 9 + RIGHT + 13 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  LEFT + 2 + LEFT + 12,
+            'HOUSE_2':  LEFT + 2 + LEFT + 11,
             'HOUSE_3':  LEFT + 2 + RIGHT + 11 + LEFT + 5 + RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 9 + RIGHT + 11 + RIGHT + 3 + LEFT,
             'HOUSE_5':  LEFT + 2 + LEFT + 8 + LEFT + 2 + LEFT,
