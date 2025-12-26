@@ -251,8 +251,8 @@ def main():
             'HOUSE_8':  (2*LEFT) + 4 + RIGHT + 3 + LEFT,
             'HOUSE_9':  LEFT + 9 +  RIGHT,
             'HOUSE_10': (2*LEFT) + 4 + RIGHT + 8 + LEFT + 1 + RIGHT,
-            'PO':       (LEFT*2) + 8,
-            'CHARGER_0': (LEFT*2) + 7,
+            'PO':       (LEFT*2) + 8 + LEFT,
+            'CHARGER_0': (LEFT*2) + 7 + LEFT,
             'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + RIGHT,
             'CHARGER_2': LEFT + 6 +  RIGHT
         },
