@@ -19,7 +19,8 @@ class TSPRouteServer(Node):
         start_time = time.time()
 
         solver = GraphTSP(self.graph)
-        start = 'PostOffice'
+        # start = 'PostOffice'
+        start = 'PO'
         route = solver.nearest_neighbour_tsp(start, self.targets)
         optimized = solver.two_opt(route)
         self.get_logger().info("Using NN")
@@ -72,6 +73,11 @@ def main():
     #     'H9': {'H5': 8, 'H8': 4, 'H10': 3},
     #     'H10': {'H6': 6, 'H9': 3},
     # }
+
+
+    # Full path: ['PostOffice', 'H4', 'H3', 'H6', 'H10', 'H6', 'H1', 'PostOffice']
+    targets = ['H10', 'H6', 'H4']
+    targets = ['H4', 'H6', 'H10']
 
     # Robot starts facing POST OFFICE
     graph = {
@@ -300,10 +306,8 @@ def main():
         }
     }
 
-    # Full path: ['PostOffice', 'H4', 'H3', 'H6', 'H10', 'H6', 'H1', 'PostOffice']
-    targets = ['H10', 'H6', 'H4']
-    targets = ['H4', 'H6', 'H10']
-    targets = ['H6', 'H4', 'H10']
+
+    targets = ['HOUSE_6', 'HOUSE_4', 'HOUSE_10']
 
     # houses to visit -> WILL BE SOMEHOW PASSED TO HERE
     node = TSPRouteServer(graph, targets)
