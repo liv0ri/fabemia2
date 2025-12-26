@@ -77,7 +77,7 @@ def main():
     graph = {
         'PO': {'HOUSE_1': RIGHT + 5 + RIGHT + 1 + LEFT, 
                'HOUSE_2': RIGHT + 3 + RIGHT + 11 + LEFT, 
-               'HOUSE_3': RIGHT + 3 + RIGHT + 7 + LEFT, 
+               'HOUSE_3': RIGHT + 3 + RIGHT + 6 + LEFT + 1 + RIGHT, 
                'HOUSE_4': RIGHT + 3 + RIGHT + 3 + RIGHT, 
                'HOUSE_5': (2*RIGHT) + 9 + LEFT, 
                'HOUSE_6': (2*RIGHT) + 11 + RIGHT + 2 + LEFT, 
