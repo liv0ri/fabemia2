@@ -254,7 +254,7 @@ def main():
             'PO':       (LEFT*2) + 8 + LEFT,
             'CHARGER_0': (LEFT*2) + 7 + LEFT,
             'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + RIGHT,
-            'CHARGER_2': LEFT + 6 +  RIGHT
+            'CHARGER_2': LEFT + 6 + RIGHT
         },
 
         'HOUSE_8': {
@@ -264,7 +264,7 @@ def main():
             'HOUSE_4':  LEFT + 3 + RIGHT + 8 + RIGHT + 3 + RIGHT,
             'HOUSE_5':  RIGHT + 3 + RIGHT + 5 + LEFT + 3 + RIGHT,
             'HOUSE_6':  RIGHT + 2 + RIGHT + 5 + RIGHT + 5 + LEFT + 2 + RIGHT,
-            'HOUSE_7':  LEFT + 3 + LEFT + 4,
+            'HOUSE_7':  LEFT + 3 + LEFT + 3,
             'HOUSE_9':  LEFT + 3 + LEFT + 4 + LEFT + 9 + RIGHT,
             'HOUSE_10': RIGHT + 7 + LEFT + 1 + RIGHT,
             'PO':       RIGHT + 3 + RIGHT + 5 + RIGHT,
