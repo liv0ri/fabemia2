@@ -42,8 +42,8 @@ class TSPRouteServer(Node):
 
 def main():
     rclpy.init()
-    LEFT = 2.0
-    RIGHT = 2.0
+    LEFT = 1.0
+    RIGHT = 1.0
     # graph = {
     #     'PostOffice': {'H1': 2, 'H2': 3},
     #     'H1': {'PostOffice': 2, 'H2': 1},
@@ -291,7 +291,7 @@ def main():
 
         'HOUSE_10': {
             'HOUSE_1':  RIGHT + 1 + RIGHT + 8 + RIGHT + 10 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 5 + LEFT + 3,
+            'HOUSE_2':  LEFT + 2 + LEFT + 2 + RIGHT+ 2 + LEFT +6 + RIGHT + 5 + RIGHT + 1,
             'HOUSE_3':  LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 1 + LEFT + 3 + LEFT + 1 + RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 1 + RIGHT + 8 + RIGHT + 8 + RIGHT + 3 + LEFT,
             'HOUSE_5':  RIGHT + 2 + RIGHT + 2 + RIGHT + 2 + LEFT + 3 + RIGHT,
