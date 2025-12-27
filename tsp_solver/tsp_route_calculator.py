@@ -248,12 +248,12 @@ def main():
             'HOUSE_4':  (2*LEFT) + 11 + RIGHT + 3 + RIGHT,
             'HOUSE_5':  (2*LEFT) + 8 + RIGHT + 9 + RIGHT,
             'HOUSE_6':   LEFT + 11 + LEFT + 6 + RIGHT,
-            'HOUSE_8':  (2*LEFT) + 4 + RIGHT + 3 + LEFT,
+            'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 3 + LEFT,
             'HOUSE_9':  LEFT + 9 + RIGHT,
             'HOUSE_10': (2*LEFT) + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
             'PO':       (LEFT*2) + 8 + LEFT,
             'CHARGER_0': (LEFT*2) + 7 + LEFT,
-            'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + RIGHT,
+            'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + LEFT,
             'CHARGER_2': LEFT + 6 + RIGHT
         },
 
