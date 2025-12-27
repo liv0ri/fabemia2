@@ -246,7 +246,7 @@ def main():
             'HOUSE_2':  (2*LEFT) + 11 + RIGHT + 11 + LEFT,
             'HOUSE_3':  (2*LEFT) + 11 + RIGHT + 6 + LEFT + 1 + RIGHT,
             'HOUSE_4':  (2*LEFT) + 11 + RIGHT + 3 + RIGHT,
-            'HOUSE_5':  (2*LEFT) + 9 + RIGHT + 8 + RIGHT,
+            'HOUSE_5':  (2*LEFT) + 8 + RIGHT + 9 + RIGHT,
             'HOUSE_6':   LEFT + 11 + LEFT + 6 + RIGHT,
             'HOUSE_8':  (2*LEFT) + 4 + RIGHT + 3 + LEFT,
             'HOUSE_9':  LEFT + 9 + RIGHT,
