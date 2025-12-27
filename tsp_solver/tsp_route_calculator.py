@@ -226,18 +226,18 @@ def main():
         },
 
         'HOUSE_6': {
-            'HOUSE_1':  LEFT + 5 + LEFT + 5 + LEFT + 2 + LEFT + 5 + RIGHT,
+            'HOUSE_1':  LEFT + 5 + LEFT + 5 + RIGHT + 2 + LEFT + 5 + RIGHT,
             'HOUSE_2':  LEFT + 5,
-            'HOUSE_3':  LEFT + 5 + RIGHT + 5 +  LEFT + 1 + RIGHT,
+            'HOUSE_3':  LEFT + 5 + LEFT + 5 +  RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 5 + LEFT + 8 + LEFT,
             'HOUSE_5':  LEFT + 2 + LEFT + 2 + RIGHT,
             'HOUSE_7':  RIGHT + 6 + RIGHT + 11 + LEFT,
-            'HOUSE_8':  LEFT + 2 + LEFT + 5 + LEFT + 5 + RIGHT + 2 + LEFT,
+            'HOUSE_8':  LEFT + 2 + LEFT + 5 + LEFT + 5 + RIGHT + 3 + LEFT,
             'HOUSE_9':  RIGHT + 6 + RIGHT + 2 + LEFT,
             'HOUSE_10': LEFT + 2 + LEFT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
             'PO':       LEFT + 2 + LEFT + 11,
             'CHARGER_0': LEFT + 2 + LEFT + 11 + LEFT + 1 + RIGHT,
-            'CHARGER_1': LEFT + 6 + LEFT + 3 + RIGHT,
+            'CHARGER_1': LEFT + 5 + LEFT + 3 + RIGHT,
             'CHARGER_2':  RIGHT + 6 + RIGHT + 5 + LEFT,
         },
 
