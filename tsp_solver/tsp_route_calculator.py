@@ -119,7 +119,7 @@ def main():
             'HOUSE_3': RIGHT + 3 + RIGHT + 1 + RIGHT,
             'HOUSE_4': LEFT + 5 + LEFT,
             'HOUSE_5': LEFT + 1 + LEFT + 3 + LEFT + 2 + LEFT,
-            'HOUSE_6': RIGHT + 3 + RIGHT + 6 + LEFT,
+            'HOUSE_6': RIGHT + 3 + RIGHT + 5 + LEFT,
             'HOUSE_7': LEFT + 9 + LEFT + 11,
             'HOUSE_8': LEFT + 8 + LEFT + 8 + RIGHT + 3 + LEFT,
             'HOUSE_9': RIGHT + 3 + RIGHT + 11 + RIGHT + 2 + LEFT,
