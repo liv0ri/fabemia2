@@ -19,7 +19,8 @@ class TSPRouteServer(Node):
         start_time = time.time()
 
         solver = GraphTSP(self.graph)
-        start = 'PostOffice'
+        # start = 'PostOffice'
+        start = 'PO'
         route = solver.nearest_neighbour_tsp(start, self.targets)
         optimized = solver.two_opt(route)
         self.get_logger().info("Using NN")
@@ -41,8 +42,8 @@ class TSPRouteServer(Node):
 
 def main():
     rclpy.init()
-    LEFT = 2.0
-    RIGHT = 2.0
+    LEFT = 1.0
+    RIGHT = 1.0
     # graph = {
     #     'PostOffice': {'H1': 2, 'H2': 3},
     #     'H1': {'PostOffice': 2, 'H2': 1},
@@ -73,40 +74,82 @@ def main():
     #     'H10': {'H6': 6, 'H9': 3},
     # }
 
+
+    # Full path: ['PostOffice', 'H4', 'H3', 'H6', 'H10', 'H6', 'H1', 'PostOffice']
+    targets = ['H10', 'H6', 'H4']
+    targets = ['H4', 'H6', 'H10']
+
     # Robot starts facing POST OFFICE
     graph = {
         'PO': {'HOUSE_1': RIGHT + 5 + RIGHT + 1 + LEFT, 
                'HOUSE_2': RIGHT + 3 + RIGHT + 11 + LEFT, 
-               'HOUSE_3': RIGHT + 3 + RIGHT + 7 + LEFT, 
+               'HOUSE_3': RIGHT + 3 + RIGHT + 6 + LEFT + 1 + RIGHT, 
                'HOUSE_4': RIGHT + 3 + RIGHT + 3 + RIGHT, 
                'HOUSE_5': (2*RIGHT) + 9 + LEFT, 
                'HOUSE_6': (2*RIGHT) + 11 + RIGHT + 2 + LEFT, 
                'HOUSE_7': LEFT + 8, 
                'HOUSE_8':  LEFT + 5 + LEFT + 3 + LEFT, 
-               'HOUSE_9': LEFT + 9 + LEFT + 9 + RIGHT, 
-               'HOUSE_10': LEFT + 5 + LEFT + 8 + LEFT + 1 + RIGHT, 
-               'CHARGER_0': RIGHT + 1, 
-               'CHARGER_1': RIGHT + 3 + RIGHT + 8 + RIGHT, 
-               'CHARGER_2': LEFT + 8 + LEFT + 6 + RIGHT},
+               'HOUSE_9': LEFT + 8 + LEFT + 9 + RIGHT, 
+               'HOUSE_10': (2*LEFT) + 6 + RIGHT + 2 + LEFT + 2 + RIGHT + 2 + LEFT, 
+               'CHARGER_0': LEFT + 1 + RIGHT, 
+               'CHARGER_1': RIGHT + 3 + RIGHT + 8 + LEFT, 
+               'CHARGER_2': LEFT + 8 + LEFT + 6 + RIGHT
+        },
 
-        # 'CHARGER_0': { 'PO': 0, 'HOUSE_1': RIGHT + 6 + RIGHT + 1 + LEFT, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
-        #        'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
-        #         'CHARGER_1': 0, 'CHARGER_2': 1},
-
+        'CHARGER_0': {
+            'PO': LEFT + 1 + RIGHT,
+            'HOUSE_1': RIGHT + 6 + RIGHT + 1 + LEFT,
+            'HOUSE_2': RIGHT + 4 + RIGHT + 11 + LEFT,
+            'HOUSE_3': RIGHT + 4 + RIGHT + 6 + LEFT + 1 + RIGHT,
+            'HOUSE_4': RIGHT + 4 + RIGHT + 3 + RIGHT,
+            'HOUSE_5': RIGHT + 1 + RIGHT + 9 + LEFT,
+            'HOUSE_6': RIGHT + 1 + RIGHT + 11 + RIGHT + 2 + LEFT,
+            'HOUSE_7': LEFT + 7,
+            'HOUSE_8': LEFT + 4 + LEFT + 3 + LEFT,
+            'HOUSE_9': LEFT + 7 + LEFT + 9 + RIGHT,
+            'HOUSE_10': RIGHT + 4 + LEFT + 8 + LEFT + 1 + RIGHT,
+            'CHARGER_1': RIGHT + 4 + RIGHT + 8 + LEFT,
+            'CHARGER_2': LEFT + 7 + LEFT + 6 + RIGHT
+        },
         
-        # 'CHARGER_1': { 'PO': 0, 'HOUSE_1': LEFT + 2 + LEFT + 5, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
-        #        'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
-        #        'CHARGER_0': 0, 'CHARGER_2': 1},
+        'CHARGER_1': {
+            'PO': LEFT + 8 + LEFT + 3 + LEFT,
+            'HOUSE_1': LEFT + 2 + RIGHT + 2 + LEFT + 5 + RIGHT,
+            'HOUSE_2': RIGHT + 3 + LEFT,
+            'HOUSE_3': LEFT + 2 + RIGHT + 1 + RIGHT,
+            'HOUSE_4': LEFT + 5 + LEFT,
+            'HOUSE_5': LEFT + 1 + LEFT + 3 + LEFT + 2 + LEFT,
+            'HOUSE_6': RIGHT + 3 + RIGHT + 5 + LEFT,
+            'HOUSE_7': LEFT + 8 + LEFT + 11,
+            'HOUSE_8': LEFT + 8 + LEFT + 8 + LEFT + 3 + LEFT,
+            'HOUSE_9': RIGHT + 3 + RIGHT + 11 + RIGHT + 2 + LEFT,
+            'HOUSE_10': LEFT + 1 + LEFT + 3 + RIGHT + 1 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,            
+            'CHARGER_0': LEFT + 8 + LEFT + 4 + RIGHT,
+            'CHARGER_2': RIGHT + 3 + RIGHT + 11 + RIGHT + 5 + RIGHT,
+        },
 
-        # 'CHARGER_2': { 'PO': 0, 'HOUSE_1': RIGHT + 6 + RIGHT + 13 + RIGHT + 1 + LEFT, 'HOUSE_2': 4, 'HOUSE_3': 4, 'HOUSE_4': 4, 'HOUSE_5': 4, 
-        #        'HOUSE_6': 4, 'HOUSE_7': 4, 'HOUSE_8': 4, 'HOUSE_9': 4, 'HOUSE_10': 4, 
-        #        'CHARGER_0': 0, 'CHARGER_1': 0},
+        'CHARGER_2': {
+            'PO': RIGHT + 6 + RIGHT + 8 + LEFT,
+            'HOUSE_1': RIGHT + 6 + RIGHT + 13 + RIGHT + 1 + LEFT,
+            'HOUSE_2': LEFT + 5 + LEFT + 11,
+            'HOUSE_3': LEFT + 5 + RIGHT + 11 + LEFT + 5 + RIGHT + 1 + RIGHT,
+            'HOUSE_4': RIGHT + 6 + RIGHT + 11 + RIGHT + 3 + RIGHT,
+            'HOUSE_5': LEFT + 5 + LEFT + 8 + LEFT + 2 + RIGHT,
+            'HOUSE_6': LEFT + 5 + LEFT + 6 + RIGHT,
+            'HOUSE_7': RIGHT + 6 + LEFT,
+            'HOUSE_8': RIGHT + 6 + RIGHT + 3 + RIGHT + 3 + LEFT,
+            'HOUSE_9': LEFT + 3 + RIGHT,
+            'HOUSE_10': RIGHT + 6 + LEFT + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
+            'CHARGER_0': RIGHT + 6 + RIGHT + 7 + LEFT,
+            'CHARGER_1': LEFT + 5 + LEFT + 11 + LEFT + 3 + RIGHT
+        },
+
 
         'HOUSE_1': {
             'HOUSE_2':  RIGHT + 5 + RIGHT + 2 + LEFT + 5 + LEFT ,
-            'HOUSE_3':  RIGHT + 5 + RIGHT + 1,
+            'HOUSE_3':  RIGHT + 5 + RIGHT + 1 + LEFT,
             'HOUSE_4':  LEFT + 1 + LEFT + 2 + LEFT + 3 + RIGHT,
-            'HOUSE_5':  RIGHT + 5 + RIGHT + 2 + LEFT + 1 + LEFT + 3 + LEFT + 2 + LEFT,
+            'HOUSE_5': RIGHT + 5 + RIGHT + 2 + LEFT + 1 + RIGHT+ 3 + LEFT + 2 + LEFT,
             'HOUSE_6':  RIGHT + 5 + RIGHT + 2 + RIGHT + 5 + RIGHT + 5 + LEFT,
             'HOUSE_7':  LEFT + 1 + LEFT + 13,
             'HOUSE_8':  LEFT + 1 + LEFT + 10 + LEFT + 3 + LEFT,
@@ -114,159 +157,157 @@ def main():
             'HOUSE_10': LEFT + 1 + LEFT + 10 + LEFT + 8 + LEFT + 1 + RIGHT,
             'PO':       LEFT + 1 + LEFT + 5 + RIGHT,
             'CHARGER_0': LEFT + 1 + LEFT + 6 + RIGHT,
-            'CHARGER_1': RIGHT + 5 + RIGHT + 2,
+            'CHARGER_1': RIGHT + 5 + RIGHT + 2 + LEFT + 2 + LEFT,
             'CHARGER_2': LEFT + 1 + LEFT + 13 + LEFT + 6 + RIGHT
         },
 
         'HOUSE_2': {
             'HOUSE_1':  LEFT + 5 + RIGHT + 2 + LEFT + 5 + RIGHT,
-            'HOUSE_3':  LEFT + 4 + RIGHT,
+            'HOUSE_3':  LEFT + 5 + RIGHT + 1 + RIGHT,
             'HOUSE_4':  LEFT + 8 + LEFT,
-            'HOUSE_5':  (2*LEFT) + 4 + RIGHT + 2 + RIGHT,
-            'HOUSE_6':  (2*LEFT) + 6 + LEFT,
-            'HOUSE_7':  (2*LEFT) + 12 + RIGHT + 11 + LEFT,
-            'HOUSE_8':  'LEFT + 3 + DOWN + 5 + LEFT + 3',
-            'HOUSE_9':  'LEFT + 3 + DOWN + 9 + LEFT + 9 + RIGHT',
-            'HOUSE_10': 'DOWN + 8 + LEFT + 1',
-            'PO':       'LEFT + 3 + LEFT + 3 + LEFT',
-            'CHARGER_0': 'LEFT + 3 + LEFT + 3',
-            'CHARGER_1': 'RIGHT + 1',
-            'CHARGER_2': 'DOWN + 8'
+            'HOUSE_5':  (2*LEFT) + 3 + RIGHT + 2 + RIGHT,
+            'HOUSE_6':  (2*LEFT) + 5 + LEFT,
+            'HOUSE_7':  LEFT + 11 + LEFT + 11,
+            'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 5 + LEFT + 5 + RIGHT + 3 + RIGHT,
+            'HOUSE_9':  (2*LEFT) + 11 + RIGHT + 2 + LEFT,
+            'HOUSE_10': (2*LEFT) + 3 + RIGHT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
+            'PO':       LEFT + 11 + LEFT + 3 + RIGHT,
+            'CHARGER_0': LEFT + 11 + LEFT + 4 + RIGHT,
+            'CHARGER_1': LEFT + 3 + RIGHT,
+            'CHARGER_2': (2*LEFT) + 11 + RIGHT + 5 + LEFT
         },
 
         'HOUSE_3': {
-            'HOUSE_1':   LEFT + 1 + LEFT + 5,
-            'HOUSE_2':   RIGHT + 4 + LEFT,
-            'HOUSE_4':  'RIGHT + 4',
-            'HOUSE_5':  'LEFT + 1 + DOWN + 9 + RIGHT + 1',
-            'HOUSE_6':  'LEFT + 1 + DOWN + 11 + RIGHT + 3',
-            'HOUSE_7':  'LEFT + 7 + DOWN + 8',
-            'HOUSE_8':  'LEFT + 7 + DOWN + 5 + LEFT + 3',
-            'HOUSE_9':  'LEFT + 7 + DOWN + 9 + LEFT + 9 + RIGHT',
-            'HOUSE_10': 'LEFT + 1 + DOWN + 8 + LEFT + 1',
-            'PO':       'LEFT + 3 + LEFT + 7 + LEFT',
-            'CHARGER_0': 'LEFT + 3 + LEFT + 7',
-            'CHARGER_1': 'DOWN + 2',
-            'CHARGER_2': 'LEFT + 1 + DOWN + 8 + RIGHT + 1'
+            'HOUSE_1':   LEFT + 1 + LEFT + 5 + RIGHT,
+            'HOUSE_2':   RIGHT + 1 + LEFT + 5 + LEFT,
+            'HOUSE_4':   RIGHT + 1 + RIGHT + 3 + RIGHT,
+            'HOUSE_5':  RIGHT + 1 + LEFT + 1 + RIGHT + 3 + LEFT + 2 + LEFT,
+            'HOUSE_6':  RIGHT + 1 + LEFT + 5 +  RIGHT + 5 + LEFT,
+            'HOUSE_7':  RIGHT + 1 + RIGHT + 6 + LEFT + 11,
+            'HOUSE_8':  RIGHT + 1 + RIGHT + 6 + LEFT + 8 + LEFT + 3 + LEFT,
+            'HOUSE_9':  RIGHT + 1 + LEFT + 5 + RIGHT + 11 + RIGHT + 2 + LEFT,
+            'HOUSE_10': RIGHT + 1 + LEFT + 1 + RIGHT + 3 + RIGHT + 1 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
+            'PO':        RIGHT +  1 + RIGHT + 6 + LEFT + 3 + RIGHT,
+            'CHARGER_0': RIGHT + 1 + RIGHT + 6 + LEFT + 4 + RIGHT,
+            'CHARGER_1': RIGHT + 1 + LEFT + 2 + LEFT,
+            'CHARGER_2': RIGHT + 1 + LEFT + 5 + RIGHT + 11 + LEFT + 5 + LEFT
         },
 
         'HOUSE_4': {
             'HOUSE_1':  RIGHT + 3 + RIGHT + 2 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  RIGHT + 8 + RIGHT,
-            'HOUSE_3':  'LEFT + 4',
-            'HOUSE_5':  'LEFT + 3 + DOWN + 9 + RIGHT + 3',
-            'HOUSE_6':  'DOWN + 11 + RIGHT + 1',
-            'HOUSE_7':  'LEFT + 11 + DOWN + 8',
-            'HOUSE_8':  'LEFT + 11 + DOWN + 5 + LEFT + 3',
-            'HOUSE_9':  'LEFT + 11 + DOWN + 9 + LEFT + 9 + RIGHT',
-            'HOUSE_10': 'DOWN + 8 + LEFT + 3',
-            'PO':       'LEFT + 3 + LEFT + 11 + LEFT',
-            'CHARGER_0': 'LEFT + 3 + LEFT + 11',
-            'CHARGER_1': 'LEFT + 3 + DOWN + 2',
-            'CHARGER_2': 'DOWN + 8 + LEFT + 3'
+            'HOUSE_2':  LEFT + 8 + LEFT,
+            'HOUSE_3':  LEFT + 3 + LEFT + 1 + LEFT,
+            'HOUSE_5':  LEFT + 4 + RIGHT + 3 + LEFT + 2,
+            'HOUSE_6':  LEFT + 8 + RIGHT + 5 + LEFT,
+            'HOUSE_7':  RIGHT + 3 + LEFT + 11,
+            'HOUSE_8':  RIGHT + 3 + LEFT + 8 + LEFT + 3 + LEFT,
+            'HOUSE_9':  RIGHT + 3 + LEFT + 11 + LEFT + 9 + RIGHT,
+            'HOUSE_10': LEFT + 4 + RIGHT + 3 + RIGHT + 1 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
+            'PO':        LEFT + 3 + LEFT + 3 + LEFT,
+            'CHARGER_0': LEFT + 3 + LEFT + 4 + LEFT,
+            'CHARGER_1': LEFT + 5 + LEFT,
+            'CHARGER_2': RIGHT + 3 + LEFT + 11 + LEFT + 6 + RIGHT
         },
 
         'HOUSE_5': {
-            'HOUSE_1':  LEFT + 2 + LEFT + 3 + RIGHT + 1 + RIGHT + 2 + RIGHT + 5 + RIGHT,
-            'HOUSE_2':  (2*LEFT) + 2 + LEFT + 4 + LEFT,
-            'HOUSE_3':  'UP + 9 + RIGHT + 1',
-            'HOUSE_4':  'UP + 9 + RIGHT + 3',
-            'HOUSE_6':  'DOWN + 2',
-            'HOUSE_7':  'LEFT + 7 + DOWN + 8',
-            'HOUSE_8':  'LEFT + 7 + DOWN + 5 + LEFT + 3',
-            'HOUSE_9':  'LEFT + 7 + DOWN + 9 + LEFT + 9 + RIGHT',
-            'HOUSE_10': 'DOWN + 6 + LEFT + 1',
-            'PO':       'UP + 9 + LEFT + 3 + LEFT + 3 + LEFT',
-            'CHARGER_0': 'UP + 9 + LEFT + 3 + LEFT + 3',
-            'CHARGER_1': 'UP + 9 - 2',      
-            'CHARGER_2': 'DOWN + 3'
+            'HOUSE_1':  LEFT + 2 + RIGHT + 3 + LEFT+ 1 + RIGHT + 2 + LEFT + 5 + RIGHT,
+            'HOUSE_2':  RIGHT + 2 + LEFT + 3,
+            'HOUSE_3':  LEFT + 2 + RIGHT + 3 + LEFT + 1 + RIGHT + 1 + RIGHT,
+            'HOUSE_4':  LEFT + 2 + RIGHT + 3 + LEFT + 4 + LEFT,
+            'HOUSE_6':  RIGHT + 2 + RIGHT + 2 + LEFT,
+            'HOUSE_7':  LEFT + 9 + LEFT + 8,
+            'HOUSE_8':  LEFT + 3 + LEFT + 5 + RIGHT + 3 + RIGHT,
+            'HOUSE_9':  RIGHT + 2 + RIGHT + 8 + RIGHT + 2 + LEFT,
+            'HOUSE_10': LEFT + 3 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
+            'PO':        LEFT + 9,
+            'CHARGER_0': LEFT + 9 + LEFT + 1 + RIGHT,
+            'CHARGER_1': LEFT + 2 + RIGHT + 3 + RIGHT + 1 + LEFT,      
+            'CHARGER_2': RIGHT + 2 + RIGHT + 8 + RIGHT + 5 + LEFT
         },
 
         'HOUSE_6': {
-            'HOUSE_1':  LEFT + 5 + LEFT + 5 + LEFT + 2 + LEFT + 5 + RIGHT,
-            'HOUSE_2':  (2*LEFT) + 6 + RIGHT,
-            'HOUSE_3':  'UP + 11 + RIGHT + 1',
-            'HOUSE_4':  'UP + 11 + RIGHT + 3',
-            'HOUSE_5':  'UP + 2',
-            'HOUSE_7':  'LEFT + 7 + DOWN + 6',
-            'HOUSE_8':  'LEFT + 7 + DOWN + 3 + LEFT + 3',
-            'HOUSE_9':  'LEFT + 7 + DOWN + 7 + LEFT + 9 + RIGHT',
-            'HOUSE_10': 'LEFT + 2',
-            'PO':       'UP + 11 + LEFT + 3 + LEFT + 3 + LEFT',
-            'CHARGER_0': 'UP + 11 + LEFT + 3 + LEFT + 3',
-            'CHARGER_1': 'UP + 9',
-            'CHARGER_2': 'LEFT + 5'
+            'HOUSE_1':  LEFT + 5 + LEFT + 5 + RIGHT + 2 + LEFT + 5 + RIGHT,
+            'HOUSE_2':  LEFT + 5,
+            'HOUSE_3':  LEFT + 5 + LEFT + 5 +  RIGHT + 1 + RIGHT,
+            'HOUSE_4':  LEFT + 5 + LEFT + 8 + LEFT,
+            'HOUSE_5':  LEFT + 2 + LEFT + 2 + RIGHT,
+            'HOUSE_7':  RIGHT + 6 + RIGHT + 11 + LEFT,
+            'HOUSE_8':  LEFT + 2 + LEFT + 5 + LEFT + 5 + RIGHT + 3 + LEFT,
+            'HOUSE_9':  RIGHT + 6 + RIGHT + 2 + LEFT,
+            'HOUSE_10': LEFT + 2 + LEFT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
+            'PO':       LEFT + 2 + LEFT + 11,
+            'CHARGER_0': LEFT + 2 + LEFT + 11 + LEFT + 1 + RIGHT,
+            'CHARGER_1': LEFT + 5 + LEFT + 3 + RIGHT,
+            'CHARGER_2':  RIGHT + 6 + RIGHT + 5 + LEFT,
         },
 
         'HOUSE_7': {
-            'HOUSE_1':  RIGHT + 13 + RIGHT + 1,
-            'HOUSE_2':  (2*LEFT) + 11 + LEFT + 12 + RIGHT,
-            'HOUSE_3':  'UP + 8 + RIGHT + 7',
-            'HOUSE_4':  'UP + 8 + RIGHT + 11',
-            'HOUSE_5':  'UP + 8 + RIGHT + 7',
-            'HOUSE_6':  'UP + 6 + RIGHT + 7',
-            'HOUSE_8':  'RIGHT + 3',
-            'HOUSE_9':  'RIGHT + 7',
-            'HOUSE_10': 'RIGHT + 10 + UP + 2',
-            'PO':       'UP + 8 + RIGHT',
-            'CHARGER_0': 'RIGHT + 3',
-            'CHARGER_1': 'UP + 8 + RIGHT + 9',
-            'CHARGER_2': 'RIGHT + 7 + UP + 3'
+            'HOUSE_1':  (2*LEFT) + 13 + RIGHT + 1 + LEFT,
+            'HOUSE_2':  (2*LEFT) + 11 + RIGHT + 11 + LEFT,
+            'HOUSE_3':  (2*LEFT) + 11 + RIGHT + 6 + LEFT + 1 + RIGHT,
+            'HOUSE_4':  (2*LEFT) + 11 + RIGHT + 3 + RIGHT,
+            'HOUSE_5':  (2*LEFT) + 8 + RIGHT + 9 + RIGHT,
+            'HOUSE_6':   LEFT + 11 + LEFT + 6 + RIGHT,
+            'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 3 + LEFT,
+            'HOUSE_9':  LEFT + 9 + RIGHT,
+            'HOUSE_10': (2*LEFT) + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
+            'PO':       (LEFT*2) + 8 + LEFT,
+            'CHARGER_0': (LEFT*2) + 7 + LEFT,
+            'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + LEFT,
+            'CHARGER_2': LEFT + 6 + RIGHT
         },
 
         'HOUSE_8': {
-            'HOUSE_1':  RIGHT + 3 + RIGHT + 10 + RIGHT + 1 + RIGHT,
-            'HOUSE_2':  'UP + 5 + RIGHT + 3',
-            'HOUSE_3':  'UP + 5 + RIGHT + 7',
-            'HOUSE_4':  'UP + 5 + RIGHT + 11',
-            'HOUSE_5':  'UP + 5 + RIGHT + 7',
-            'HOUSE_6':  'UP + 3 + RIGHT + 7',
-            'HOUSE_7':  'LEFT + 3',
-            'HOUSE_9':  'RIGHT + 4',
-            'HOUSE_10': 'RIGHT + 7 + UP + 2',
-            'PO':       'UP + 5 + RIGHT',
-            'CHARGER_0': 'LEFT + 3 + UP + 5',
-            'CHARGER_1': 'UP + 5 + RIGHT + 9',
-            'CHARGER_2': 'RIGHT + 4 + UP + 3'
+            'HOUSE_1':  LEFT + 3 + RIGHT + 10 + RIGHT + 1 + LEFT,
+            'HOUSE_2':  RIGHT + 3 + LEFT + 5 + RIGHT + 5 + LEFT + 3,
+            'HOUSE_3':  LEFT + 3 + RIGHT + 8 + RIGHT + 6 + RIGHT + 1 + RIGHT,
+            'HOUSE_4':  LEFT + 3 + RIGHT + 8 + RIGHT + 3 + RIGHT,
+            'HOUSE_5':  RIGHT + 3 + LEFT + 5 + RIGHT + 3 + LEFT,
+            'HOUSE_6':  RIGHT + 3 + LEFT + 5 + RIGHT + 5 + RIGHT + 2 + LEFT,
+            'HOUSE_7':  LEFT + 3 + LEFT + 3,
+            'HOUSE_9':  LEFT + 3 + LEFT + 3 + LEFT + 9 + RIGHT,
+            'HOUSE_10': RIGHT + 5 + LEFT + 1 + RIGHT,
+            'PO':       RIGHT + 3 + RIGHT + 5 + LEFT,
+            'CHARGER_0': RIGHT + 3 + RIGHT + 4 + LEFT,
+            'CHARGER_1': LEFT + 3 + LEFT + 8 + RIGHT + 8 + LEFT,
+            'CHARGER_2': LEFT + 3 + LEFT + 3 + LEFT + 6 + RIGHT
         },
 
         'HOUSE_9': {
             'HOUSE_1':  RIGHT + 9 + RIGHT + 13 + RIGHT + 1 + LEFT,
-            'HOUSE_2':  'UP + 9 + RIGHT + 3',
-            'HOUSE_3':  'UP + 9 + RIGHT + 7',
-            'HOUSE_4':  'UP + 9 + RIGHT + 11',
-            'HOUSE_5':  'UP + 9 + RIGHT + 7',
-            'HOUSE_6':  'UP + 7 + RIGHT + 7',
-            'HOUSE_7':  'LEFT + 7',
-            'HOUSE_8':  'LEFT + 4',
-            'HOUSE_10': 'RIGHT + 3 + UP + 2',
-            'PO':       'UP + 9 + RIGHT',
-            'CHARGER_0': 'LEFT + 7 + UP + 9',
-            'CHARGER_1': 'UP + 9 + RIGHT + 9',
-            'CHARGER_2': 'UP + 3'
+            'HOUSE_2':  LEFT + 2 + LEFT + 11,
+            'HOUSE_3':  LEFT + 2 + LEFT + 11 + LEFT + 5 + RIGHT + 1 + RIGHT,
+            'HOUSE_4':  RIGHT + 9 + RIGHT + 11 + RIGHT + 3 + RIGHT,
+            'HOUSE_5':  LEFT + 2 + LEFT + 8 + LEFT + 2 + RIGHT,
+            'HOUSE_6':  LEFT + 2 + LEFT + 6 + RIGHT,
+            'HOUSE_7':  RIGHT + 9 + LEFT,
+            'HOUSE_8':  RIGHT + 9 + RIGHT + 3 + RIGHT + 3 + LEFT,
+            'HOUSE_10': RIGHT + 9 + RIGHT + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
+            'PO':       RIGHT + 9 + RIGHT + 8 + LEFT,
+            'CHARGER_0': RIGHT + 9 + RIGHT + 7 + LEFT,
+            'CHARGER_1': LEFT + 2 + LEFT + 11 + LEFT + 3 + RIGHT,
+            'CHARGER_2': RIGHT + 3 + LEFT,
         },
 
         'HOUSE_10': {
-            'HOUSE_1':  RIGHT + 1 + RIGHT + 8 + RIGHT + 5 + LEFT,
-            'HOUSE_2':  'UP + 8',
-            'HOUSE_3':  'UP + 8 + RIGHT + 4',
-            'HOUSE_4':  'UP + 8 + RIGHT + 6',
-            'HOUSE_5':  'UP + 6 + RIGHT + 2',
-            'HOUSE_6':  'RIGHT + 2',
-            'HOUSE_7':  'DOWN + 2 + LEFT + 10',
-            'HOUSE_8':  'DOWN + 2 + LEFT + 7',
-            'HOUSE_9':  'DOWN + 2 + LEFT + 3',
-            'PO':       'UP + 8 + LEFT + 3 + LEFT + 3 + LEFT',
-            'CHARGER_0': 'UP + 8 + LEFT + 3 + LEFT + 3',
-            'CHARGER_1': 'UP + 6 + RIGHT + 4',
-            'CHARGER_2': 'DOWN + 2 + LEFT + 4'
+            'HOUSE_1':  RIGHT + 1 + RIGHT + 8 + RIGHT + 10 + RIGHT + 1 + LEFT,
+            'HOUSE_2':  LEFT + 2 + LEFT + 2 + RIGHT+ 2 + RIGHT + 5 + LEFT + 3,
+            'HOUSE_3':  LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 1 + LEFT + 3 + LEFT + 1 + RIGHT + 1 + RIGHT,
+            'HOUSE_4':  LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 1 + LEFT + 3 + RIGHT + 4 + LEFT,
+            'HOUSE_5':  LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 3 + LEFT,
+            'HOUSE_6': LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 5 + RIGHT + 2 + LEFT,
+            'HOUSE_7':  RIGHT + 1 + RIGHT + 8 + LEFT + 3,
+            'HOUSE_8':  RIGHT + 1 + RIGHT + 5 + RIGHT,
+            'HOUSE_9':  RIGHT + 1 + RIGHT + 8 + LEFT + 3 + LEFT + 9 + RIGHT,
+            'PO':       LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT + 6,
+            'CHARGER_0': RIGHT + 1 + RIGHT + 8 + RIGHT + 4 + LEFT,
+            'CHARGER_1': LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 1  + LEFT + 3 + RIGHT + 1 + LEFT,
+            'CHARGER_2': RIGHT + 1 + RIGHT + 8 + LEFT + 3 + LEFT + 6 + RIGHT
         }
     }
 
-    # Full path: ['PostOffice', 'H4', 'H3', 'H6', 'H10', 'H6', 'H1', 'PostOffice']
-    targets = ['H10', 'H6', 'H4']
-    targets = ['H4', 'H6', 'H10']
-    targets = ['H6', 'H4', 'H10']
+
+    targets = ['HOUSE_6', 'HOUSE_4', 'HOUSE_10']
 
     # houses to visit -> WILL BE SOMEHOW PASSED TO HERE
     node = TSPRouteServer(graph, targets)
