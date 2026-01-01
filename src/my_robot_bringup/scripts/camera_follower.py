@@ -51,10 +51,13 @@ class CameraFollower(Node):
             rgb_np = np.uint8([[list(rgb)]])
             hsv = cv2.cvtColor(rgb_np, cv2.COLOR_RGB2HSV)[0][0]
 
-            h, _, _ = hsv
             # widen HSV range to tolerate lighting
-            lower = (max(h - 20, 0), 50, 50)
-            upper = (min(h + 20, 179), 255, 255)
+            h, s, v = hsv
+            print("Value of h in hsv", h, s, v, "in name", name)
+            # widen HSV range to tolerate lighting and distinguish similar hues
+            lower = (max(h - 5, 0), max(s - 50, 50), max(v - 50, 50))
+            upper = (min(h + 5, 179), min(s + 50, 255), min(v + 50, 255))
+
 
             self.house_colours[name] = (lower, upper)
 
@@ -78,6 +81,7 @@ class CameraFollower(Node):
         # Convert RGB or BGR to HSV - Hue Saturation Value
         if msg.encoding == "rgb8":
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            # print("Value of hsv found", hsv)
         else:
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -107,9 +111,21 @@ class CameraFollower(Node):
         right_pixels = np.sum(right > 0)
         # is the house visible
         total_pixels = np.sum(mask > 0)
-        print(total_pixels)
-        self.get_logger().info(str(img[height//2, width//2]))
-
+        # print(total_pixels)
+        print(hsv)
+        
+        # ------------------------
+        # CHECK FOR OTHER OBJECTS
+        # ------------------------
+        other_objects = []
+        for name, (lower, upper) in self.house_colours.items():
+            if name == self.TARGET_HOUSE:
+                continue
+            obj_mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
+            if np.sum(obj_mask > 0) > 50:
+                other_objects.append(name)
+        if other_objects:
+            self.get_logger().info(f"Other objects detected: {', '.join(other_objects)}")
 
         cmd = Twist()
 
