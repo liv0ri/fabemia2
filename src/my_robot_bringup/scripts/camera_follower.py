@@ -50,9 +50,10 @@ class CameraFollower(Node):
             rgb_np = np.uint8([[list(rgb)]])
             hsv = cv2.cvtColor(rgb_np, cv2.COLOR_RGB2HSV)[0][0]
 
-            h, s, v = hsv
-            lower = (max(h - 10, 0), max(s - 50, 50), max(v - 50, 50))
-            upper = (min(h + 10, 179), min(s + 50, 255), min(v + 50, 255))
+            h, _, _ = hsv
+            # widen HSV range to tolerate lighting
+            lower = (max(h - 20, 0), 50, 50)
+            upper = (min(h + 20, 179), 255, 255)
 
             self.house_colours[name] = (lower, upper)
 
@@ -71,10 +72,13 @@ class CameraFollower(Node):
         width = msg.width
 
         # Convert bytes to numpy array and reshape
-        img = np.array(msg.data, dtype=np.uint8).reshape(height, width, 3)
+        img = np.frombuffer(msg.data, dtype=np.uint8).reshape(height, width, 3)
 
-        # Convert RGB to HSV - Hue Saturation Value
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # Convert RGB or BGR to HSV - Hue Saturation Value
+        if msg.encoding == "rgb8":
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        else:
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
         # Colour mask for selected house
         mask = cv2.inRange(
