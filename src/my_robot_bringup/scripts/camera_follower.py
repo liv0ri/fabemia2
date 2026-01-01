@@ -10,6 +10,7 @@ import cv2
 class CameraFollower(Node):
     def __init__(self, target_house="HOUSE_5"):
         super().__init__('camera_house_follower')
+        # set a target house
         self.TARGET_HOUSE = target_house
 
         # Camera subscription
@@ -23,8 +24,8 @@ class CameraFollower(Node):
         # Publish velocity commands - controls the robot's linear and angular motion
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
-        # Stop distance proxy image-based
-        self.stop_ratio = 0.25  # Stop when house fills 25% of center
+        # Stop distance proxy image-based - when house fills 25% of center
+        self.stop_ratio = 0.25  
 
         # Exact RGB colors from Gazebo diffuse values
         colors = {
