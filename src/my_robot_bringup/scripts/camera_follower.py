@@ -26,7 +26,8 @@ class CameraFollower(Node):
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
         # Stop distance proxy image-based - when house fills 25% of center
-        self.stop_ratio = 0.25  
+        # fine tuned based on experiement with house 2
+        self.stop_ratio = 0.95
 
         # Exact RGB colors from Gazebo diffuse values
         colors = {
@@ -130,26 +131,26 @@ class CameraFollower(Node):
         cmd = Twist()
 
         # CONTROL LOGIC
-        if total_pixels > 500:
+        if total_pixels > 1200:
             if center_ratio > self.stop_ratio:
                 cmd.linear.x = 0.0
                 self.get_logger().info(
                     f"{self.TARGET_HOUSE} reached → STOP"
                 )
-            elif center_ratio > 0.1:
+            # elif center_ratio > 0.1:
+            else:
                 cmd.linear.x = 0.2
                 self.get_logger().info(
                     f"{self.TARGET_HOUSE} ahead FORWARD"
-                )
-            else:
-                if left_pixels > right_pixels:
-                    cmd.angular.x = 0.05
-                    cmd.angular.z = 0.4
-                    self.get_logger().info("Aligning LEFT")
-                else:
-                    cmd.linear.x = 0.05
-                    cmd.angular.z = -0.4
-                    self.get_logger().info("Aligning RIGHT")
+            )
+            # not needed due to line following
+            # else:
+            #     if left_pixels > right_pixels:
+            #         cmd.angular.z = 0.9
+            #         self.get_logger().info("Aligning LEFT")
+            #     else:
+            #         cmd.angular.z = -0.9
+            #         self.get_logger().info("Aligning RIGHT")
         else:
             cmd.angular.z = 0.3
             self.get_logger().info(f"Searching for target house {self.TARGET_HOUSE}")
