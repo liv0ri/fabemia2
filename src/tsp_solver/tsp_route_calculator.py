@@ -42,8 +42,17 @@ class TSPRouteServer(Node):
 
 def main():
     rclpy.init()
+    #for graph directory (shortest distance directory)
     LEFT = 1.0
     RIGHT = 1.0
+    #for directions directory (intersections directory)
+    B = 0 #BACKWARDS
+    L = 1 #LEFT
+    F = 2 #FORWARDS
+    R = 3 #RIGHT
+    turnRight = True
+    
+
     # graph = {
     #     'PostOffice': {'H1': 2, 'H2': 3},
     #     'H1': {'PostOffice': 2, 'H2': 1},
@@ -79,25 +88,25 @@ def main():
     targets = ['H10', 'H6', 'H4']
     targets = ['H4', 'H6', 'H10']
 
-    # Robot starts facing POST OFFICE
+    # Robot starts facing the POST OFFICE
     graph = {
-        'PO': {'HOUSE_1': RIGHT + 5 + RIGHT + 1 + LEFT, 
-               'HOUSE_2': RIGHT + 3 + RIGHT + 11 + LEFT, 
-               'HOUSE_3': RIGHT + 3 + RIGHT + 6 + LEFT + 1 + RIGHT, 
-               'HOUSE_4': RIGHT + 3 + RIGHT + 3 + RIGHT, 
-               'HOUSE_5': (2*RIGHT) + 9 + LEFT, 
-               'HOUSE_6': (2*RIGHT) + 11 + RIGHT + 2 + LEFT, 
-               'HOUSE_7': LEFT + 8, 
-               'HOUSE_8':  LEFT + 5 + LEFT + 3 + LEFT, 
-               'HOUSE_9': LEFT + 8 + LEFT + 9 + RIGHT, 
-               'HOUSE_10': (2*LEFT) + 6 + RIGHT + 2 + LEFT + 2 + RIGHT + 2 + LEFT, 
-               'CHARGER_0': LEFT + 1 + RIGHT, 
-               'CHARGER_1': RIGHT + 3 + RIGHT + 8 + LEFT, 
-               'CHARGER_2': LEFT + 8 + LEFT + 6 + RIGHT
+        'PO': {'HOUSE_1': RIGHT + 4 + RIGHT + 1 + LEFT, 
+               'HOUSE_2': RIGHT + 2 + RIGHT + 11 + LEFT, 
+               'HOUSE_3': RIGHT + 2 + RIGHT + 6 + LEFT + 1 + RIGHT, 
+               'HOUSE_4': RIGHT + 2 + RIGHT + 3 + RIGHT, 
+               'HOUSE_5': LEFT + 1 + LEFT + 9 + LEFT, 
+               'HOUSE_6': LEFT + 1 + LEFT + 11 + RIGHT + 2 + LEFT, 
+               'HOUSE_7': LEFT + 9, 
+               'HOUSE_8':  LEFT + 6 + LEFT + 3 + LEFT, 
+               'HOUSE_9': LEFT + 9 + LEFT + 9 + RIGHT, 
+               'HOUSE_10': LEFT + 1 + LEFT + 6 + RIGHT + 2 + LEFT + 2 + RIGHT + 2 + LEFT, 
+               'CHARGER_0': LEFT + 2 + RIGHT, 
+               'CHARGER_1': RIGHT + 2 + RIGHT + 8 + LEFT, 
+               'CHARGER_2': LEFT + 9 + LEFT + 6 + RIGHT
         },
 
         'CHARGER_0': {
-            'PO': LEFT + 1 + RIGHT,
+            'PO': LEFT + 2 + RIGHT,
             'HOUSE_1': RIGHT + 6 + RIGHT + 1 + LEFT,
             'HOUSE_2': RIGHT + 4 + RIGHT + 11 + LEFT,
             'HOUSE_3': RIGHT + 4 + RIGHT + 6 + LEFT + 1 + RIGHT,
@@ -113,7 +122,7 @@ def main():
         },
         
         'CHARGER_1': {
-            'PO': LEFT + 8 + LEFT + 3 + LEFT,
+            'PO': LEFT + 8 + LEFT + 2 + LEFT,
             'HOUSE_1': LEFT + 2 + RIGHT + 2 + LEFT + 5 + RIGHT,
             'HOUSE_2': RIGHT + 3 + LEFT,
             'HOUSE_3': LEFT + 2 + RIGHT + 1 + RIGHT,
@@ -129,7 +138,7 @@ def main():
         },
 
         'CHARGER_2': {
-            'PO': RIGHT + 6 + RIGHT + 8 + LEFT,
+            'PO': RIGHT + 6 + RIGHT + 9 + LEFT,
             'HOUSE_1': RIGHT + 6 + RIGHT + 13 + RIGHT + 1 + LEFT,
             'HOUSE_2': LEFT + 5 + LEFT + 11,
             'HOUSE_3': LEFT + 5 + RIGHT + 11 + LEFT + 5 + RIGHT + 1 + RIGHT,
@@ -155,7 +164,7 @@ def main():
             'HOUSE_8':  LEFT + 1 + LEFT + 10 + LEFT + 3 + LEFT,
             'HOUSE_9':  LEFT + 1 + LEFT + 13 + LEFT + 9 + RIGHT,
             'HOUSE_10': LEFT + 1 + LEFT + 10 + LEFT + 8 + LEFT + 1 + RIGHT,
-            'PO':       LEFT + 1 + LEFT + 5 + RIGHT,
+            'PO':       LEFT + 1 + LEFT + 4 + RIGHT,
             'CHARGER_0': LEFT + 1 + LEFT + 6 + RIGHT,
             'CHARGER_1': RIGHT + 5 + RIGHT + 2 + LEFT + 2 + LEFT,
             'CHARGER_2': LEFT + 1 + LEFT + 13 + LEFT + 6 + RIGHT
@@ -171,7 +180,7 @@ def main():
             'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 5 + LEFT + 5 + RIGHT + 3 + RIGHT,
             'HOUSE_9':  (2*LEFT) + 11 + RIGHT + 2 + LEFT,
             'HOUSE_10': (2*LEFT) + 3 + RIGHT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
-            'PO':       LEFT + 11 + LEFT + 3 + RIGHT,
+            'PO':       LEFT + 11 + LEFT + 2 + RIGHT,
             'CHARGER_0': LEFT + 11 + LEFT + 4 + RIGHT,
             'CHARGER_1': LEFT + 3 + RIGHT,
             'CHARGER_2': (2*LEFT) + 11 + RIGHT + 5 + LEFT
@@ -187,7 +196,7 @@ def main():
             'HOUSE_8':  RIGHT + 1 + RIGHT + 6 + LEFT + 8 + LEFT + 3 + LEFT,
             'HOUSE_9':  RIGHT + 1 + LEFT + 5 + RIGHT + 11 + RIGHT + 2 + LEFT,
             'HOUSE_10': RIGHT + 1 + LEFT + 1 + RIGHT + 3 + RIGHT + 1 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
-            'PO':        RIGHT +  1 + RIGHT + 6 + LEFT + 3 + RIGHT,
+            'PO':        RIGHT +  1 + RIGHT + 6 + LEFT + 2 + RIGHT,
             'CHARGER_0': RIGHT + 1 + RIGHT + 6 + LEFT + 4 + RIGHT,
             'CHARGER_1': RIGHT + 1 + LEFT + 2 + LEFT,
             'CHARGER_2': RIGHT + 1 + LEFT + 5 + RIGHT + 11 + LEFT + 5 + LEFT
@@ -203,7 +212,7 @@ def main():
             'HOUSE_8':  RIGHT + 3 + LEFT + 8 + LEFT + 3 + LEFT,
             'HOUSE_9':  RIGHT + 3 + LEFT + 11 + LEFT + 9 + RIGHT,
             'HOUSE_10': LEFT + 4 + RIGHT + 3 + RIGHT + 1 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
-            'PO':        LEFT + 3 + LEFT + 3 + LEFT,
+            'PO':        LEFT + 3 + LEFT + 2 + LEFT,
             'CHARGER_0': LEFT + 3 + LEFT + 4 + LEFT,
             'CHARGER_1': LEFT + 5 + LEFT,
             'CHARGER_2': RIGHT + 3 + LEFT + 11 + LEFT + 6 + RIGHT
@@ -219,7 +228,7 @@ def main():
             'HOUSE_8':  LEFT + 3 + LEFT + 5 + RIGHT + 3 + RIGHT,
             'HOUSE_9':  RIGHT + 2 + RIGHT + 8 + RIGHT + 2 + LEFT,
             'HOUSE_10': LEFT + 3 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
-            'PO':        LEFT + 9,
+            'PO':        LEFT + 9 + RIGHT + 1 + LEFT,
             'CHARGER_0': LEFT + 9 + LEFT + 1 + RIGHT,
             'CHARGER_1': LEFT + 2 + RIGHT + 3 + RIGHT + 1 + LEFT,      
             'CHARGER_2': RIGHT + 2 + RIGHT + 8 + RIGHT + 5 + LEFT
@@ -235,7 +244,7 @@ def main():
             'HOUSE_8':  LEFT + 2 + LEFT + 5 + LEFT + 5 + RIGHT + 3 + LEFT,
             'HOUSE_9':  RIGHT + 6 + RIGHT + 2 + LEFT,
             'HOUSE_10': LEFT + 2 + LEFT + 5 + LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT,
-            'PO':       LEFT + 2 + LEFT + 11,
+            'PO':       LEFT + 2 + LEFT + 11 + RIGHT + 1 + LEFT,
             'CHARGER_0': LEFT + 2 + LEFT + 11 + LEFT + 1 + RIGHT,
             'CHARGER_1': LEFT + 5 + LEFT + 3 + RIGHT,
             'CHARGER_2':  RIGHT + 6 + RIGHT + 5 + LEFT,
@@ -251,7 +260,7 @@ def main():
             'HOUSE_8':  (2*LEFT) + 3 + RIGHT + 3 + LEFT,
             'HOUSE_9':  LEFT + 9 + RIGHT,
             'HOUSE_10': (2*LEFT) + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
-            'PO':       (LEFT*2) + 8 + LEFT,
+            'PO':       (LEFT*2) + 9 + LEFT,
             'CHARGER_0': (LEFT*2) + 7 + LEFT,
             'CHARGER_1': (2*LEFT) + 11 + RIGHT + 8 + LEFT,
             'CHARGER_2': LEFT + 6 + RIGHT
@@ -267,7 +276,7 @@ def main():
             'HOUSE_7':  LEFT + 3 + LEFT + 3,
             'HOUSE_9':  LEFT + 3 + LEFT + 3 + LEFT + 9 + RIGHT,
             'HOUSE_10': RIGHT + 5 + LEFT + 1 + RIGHT,
-            'PO':       RIGHT + 3 + RIGHT + 5 + LEFT,
+            'PO':       LEFT + 3 + RIGHT + 6 + LEFT,
             'CHARGER_0': RIGHT + 3 + RIGHT + 4 + LEFT,
             'CHARGER_1': LEFT + 3 + LEFT + 8 + RIGHT + 8 + LEFT,
             'CHARGER_2': LEFT + 3 + LEFT + 3 + LEFT + 6 + RIGHT
@@ -283,7 +292,7 @@ def main():
             'HOUSE_7':  RIGHT + 9 + LEFT,
             'HOUSE_8':  RIGHT + 9 + RIGHT + 3 + RIGHT + 3 + LEFT,
             'HOUSE_10': RIGHT + 9 + RIGHT + 3 + RIGHT + 8 + LEFT + 1 + RIGHT,
-            'PO':       RIGHT + 9 + RIGHT + 8 + LEFT,
+            'PO':       RIGHT + 9 + RIGHT + 9 + LEFT,
             'CHARGER_0': RIGHT + 9 + RIGHT + 7 + LEFT,
             'CHARGER_1': LEFT + 2 + LEFT + 11 + LEFT + 3 + RIGHT,
             'CHARGER_2': RIGHT + 3 + LEFT,
@@ -299,13 +308,31 @@ def main():
             'HOUSE_7':  RIGHT + 1 + RIGHT + 8 + LEFT + 3,
             'HOUSE_8':  RIGHT + 1 + RIGHT + 5 + RIGHT,
             'HOUSE_9':  RIGHT + 1 + RIGHT + 8 + LEFT + 3 + LEFT + 9 + RIGHT,
-            'PO':       LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT + 6,
+            'PO':       LEFT + 2 + LEFT + 2 + RIGHT + 2 + LEFT + 6 + RIGHT + 1 + LEFT,
             'CHARGER_0': RIGHT + 1 + RIGHT + 8 + RIGHT + 4 + LEFT,
             'CHARGER_1': LEFT + 2 + LEFT + 2 + RIGHT + 2 + RIGHT + 1  + LEFT + 3 + RIGHT + 1 + LEFT,
             'CHARGER_2': RIGHT + 1 + RIGHT + 8 + LEFT + 3 + LEFT + 6 + RIGHT
         }
     }
 
+     #start facing the building
+     #turnRight = ?
+    directions = {
+        'PO': {'HOUSE_1': [True, False, True], 
+               'HOUSE_2': RIGHT + 3 + RIGHT + 11 + LEFT, 
+               'HOUSE_3': RIGHT + 3 + RIGHT + 6 + LEFT + 1 + RIGHT, 
+               'HOUSE_4': RIGHT + 3 + RIGHT + 3 + RIGHT, 
+               'HOUSE_5': (2*RIGHT) + 9 + LEFT, 
+               'HOUSE_6': (2*RIGHT) + 11 + RIGHT + 2 + LEFT, 
+               'HOUSE_7': LEFT + 8, 
+               'HOUSE_8':  LEFT + 5 + LEFT + 3 + LEFT, 
+               'HOUSE_9': LEFT + 8 + LEFT + 9 + RIGHT, 
+               'HOUSE_10': (2*LEFT) + 6 + RIGHT + 2 + LEFT + 2 + RIGHT + 2 + LEFT, 
+               'CHARGER_0': LEFT + 1 + RIGHT, 
+               'CHARGER_1': RIGHT + 3 + RIGHT + 8 + LEFT, 
+               'CHARGER_2': LEFT + 8 + LEFT + 6 + RIGHT
+        },
+    }
 
     targets = ['HOUSE_6', 'HOUSE_4', 'HOUSE_10']
 
