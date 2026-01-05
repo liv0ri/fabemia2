@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 import numpy as np
 import cv2
 from enum import Enum
+from config import directions
 
 # robots states
 class Mode(Enum):
@@ -19,7 +20,7 @@ class Mode(Enum):
 
 class CameraFollower(Node):
     # call it with the house its finding
-    def __init__(self, target_house="HOUSE_2"):
+    def __init__(self, target_house="HOUSE_2", start="PO"):
         super().__init__('camera_house_follower')
         # set a target house
         self.TARGET_HOUSE = target_house
