@@ -34,7 +34,6 @@ class CameraFollower(Node):
         self.get_logger().info(f"Turning plan: {self.turn_plan}")
         self.turn_index = 0
         self.doing_turn = False
-        self.current_turn_right = True
         self.all_turns_complete = False
 
         # Odometry
@@ -230,7 +229,6 @@ class CameraFollower(Node):
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
         self.doing_turn = True
-        self.current_turn_right = turn_right
         self.start_yaw = self.current_yaw
 
         # Calculate target: 90 degrees right is -pi/2, left is +pi/2
