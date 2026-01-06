@@ -35,13 +35,29 @@ class CameraFollower(Node):
         self.turn_index = 0
         self.doing_turn = False
         self.current_turn_right = True
-        
         self.all_turns_complete = False
 
         # Odometry
         self.current_yaw = 0.0
         self.start_yaw = 0.0
         self.target_yaw = 0.0
+
+        self.line_found = False
+        # offset from center
+        self.line_error = 0.0
+        self.last_line_error = 0.0
+        self.left_line = False
+        self.right_line = False
+
+        self.house_visible = False
+        self.house_reached = False
+        # Count the number of times the house was seen
+        # This is done to switch to house detection mode
+        self.house_seen_frames = 0
+
+        # Stop distance proxy image-based - when house fills 25% of center
+        # fine tuned based on experiement with house 2
+        self.stop_ratio = 0.95
 
         # Subscriptions
         self.front_sub = self.create_subscription(
@@ -91,22 +107,6 @@ class CameraFollower(Node):
         # Loop every 0.05 seconds
         self.create_timer(0.05, self.control_loop)
 
-        self.line_found = False
-        # offset from center
-        self.line_error = 0.0
-        self.last_line_error = 0.0
-        self.left_line = False
-        self.right_line = False
-
-        self.house_visible = False
-        self.house_reached = False
-        # Count the number of times the house was seen
-        # This is done to switch to house detection mode
-        self.house_seen_frames = 0
-
-        # Stop distance proxy image-based - when house fills 25% of center
-        # fine tuned based on experiement with house 2
-        self.stop_ratio = 0.95
 
         # Exact RGB colors from Gazebo diffuse values
         colors = {
@@ -147,7 +147,7 @@ class CameraFollower(Node):
 
         self.lower, self.upper = self.house_colours[self.TARGET_HOUSE]
 
-        self.get_logger().info("Camera House Follower Started")
+        # self.get_logger().info("Camera House Follower Started")
         self.get_logger().info(f"Target house: {self.TARGET_HOUSE}")
 
     # Helper function used throughout this class
@@ -243,6 +243,11 @@ class CameraFollower(Node):
     def control_loop(self):
         cmd = Twist()
 
+        if self.turn_index == 0:
+            self.start_turn(self.turn_plan[0])
+            self.cmd_pub.publish(cmd)
+            return
+
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
             if self.doing_turn:
@@ -293,10 +298,10 @@ class CameraFollower(Node):
                 cmd.linear.x = 0.0
                 cmd.angular.z = -np.sign(self.last_line_error) * 0.8
 
-            # House detection (only after all turns complete)
+            # House detection
             if self.all_turns_complete and self.house_visible:
                 self.house_seen_frames += 1
-                if self.house_seen_frames > 8:
+                if self.house_seen_frames > 2:
                     self.mode = Mode.VERIFY_HOUSE
                     self.get_logger().info("House detected - Switching to VERIFY_HOUSE mode")
             else:
@@ -305,7 +310,7 @@ class CameraFollower(Node):
         elif self.mode == Mode.VERIFY_HOUSE:
             # Continue following line toward house
             if self.line_found:
-                cmd.linear.x = 0.15
+                cmd.linear.x = 0.05
                 cmd.angular.z = -self.line_error * 0.003
 
             # Stop when house is close enough
