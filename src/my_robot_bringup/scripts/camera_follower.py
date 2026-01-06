@@ -35,9 +35,8 @@ class CameraFollower(Node):
         self.turn_index = 0
         self.doing_turn = False
         self.current_turn_right = True
-        # searching for the house
-        self.search_house = False
-        self.first_turn_done = False
+        
+        self.all_turns_complete = False
 
         # Odometry
         self.current_yaw = 0.0
@@ -95,12 +94,7 @@ class CameraFollower(Node):
         self.line_found = False
         # offset from center
         self.line_error = 0.0
-        # Used when line is lost
-        # track last line seen
-        self.last_line_seen = False  
-        # track last error 
-        self.last_line_error = 0.0     
-        # detects lines on the left or right camera
+        self.last_line_error = 0.0
         self.left_line = False
         self.right_line = False
 
@@ -179,7 +173,6 @@ class CameraFollower(Node):
             cx = int(M["m10"] / M["m00"])
             self.line_found = True
             self.line_error = cx - (w // 2)
-            self.last_line_seen = True
             self.last_line_error = self.line_error
         else:
             self.line_found = False
@@ -204,6 +197,10 @@ class CameraFollower(Node):
         self.right_line = np.sum(mask > 0) > 500
 
     def front_callback(self, msg):
+        # Only process front camera after all turns are complete
+        if not self.all_turns_complete:
+            return
+            
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
@@ -223,95 +220,98 @@ class CameraFollower(Node):
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.current_yaw = math.atan2(siny_cosp, cosy_cosp)
 
+    def normalize_angle(self, angle):
+        """Normalize angle to [-pi, pi]"""
+        while angle > math.pi:
+            angle -= 2.0 * math.pi
+        while angle < -math.pi:
+            angle += 2.0 * math.pi
+        return angle
+
     def start_turn(self, turn_right):
+        self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'}")
         self.doing_turn = True
+        self.current_turn_right = turn_right
         self.start_yaw = self.current_yaw
+        
+        # Calculate target: 90 degrees right is -pi/2, left is +pi/2
         delta = -math.pi/2 if turn_right else math.pi/2
-        self.target_yaw = (self.start_yaw + delta + math.pi) % (2*math.pi) - math.pi
+        self.target_yaw = self.normalize_angle(self.start_yaw + delta)
+        
+        self.get_logger().info(f"Start yaw: {self.start_yaw:.2f}, Target yaw: {self.target_yaw:.2f}")
 
     def control_loop(self):
         cmd = Twist()
 
-        self.get_logger().debug(
-            f"Loop | first_turn_done={self.first_turn_done} "
-            f"doing_turn={self.doing_turn} turn_index={self.turn_index}"
-        )
-        # Force first turn immediately at start
-        if not self.first_turn_done:
-            self.start_turn(self.turn_plan[0])
-            self.first_turn_done = True
-            cmd.linear.x = 0.0
-            cmd.angular.z = 0.8 if self.current_turn_right else -0.8
-            self.cmd_pub.publish(cmd)
-            self.get_logger().info("FORCED FIRST TURN COMMAND SENT")
-            return
-
         if self.mode == Mode.FOLLOW_LINE:
+            # Handle active turn
             if self.doing_turn:
                 cmd.linear.x = 0.0
                 
-                # Calculate the shortest path to target yaw
-                error = self.target_yaw - self.current_yaw
-                # Normalize error to [-pi, pi]
-                error = (error + math.pi) % (2 * math.pi) - math.pi
+                # Calculate shortest angular distance to target
+                error = self.normalize_angle(self.target_yaw - self.current_yaw)
                 
-                # Use Proportional control: speed depends on how much error is left
-                # Gain of 2.0 is a good start; min speed of 0.2 ensures it doesn't stall
-                kp_rot = 2.0
-                rot_speed = kp_rot * error
+                # Proportional control for turning
+                kp_rot = 2.5
+                cmd.angular.z = kp_rot * error
                 
-                # Cap the speed so it doesn't spin wildly
+                # Clamp rotation speed
                 max_rot_speed = 2.0
-                if rot_speed > max_rot_speed: rot_speed = max_rot_speed
-                if rot_speed < -max_rot_speed: rot_speed = -max_rot_speed
+                cmd.angular.z = max(min(cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
-                cmd.angular.z = rot_speed
-
-                # Check if turn completed threshold of ~3 degrees
+                # Check if turn is complete (within ~3 degrees)
                 if abs(error) < 0.05:
                     self.doing_turn = False
                     self.turn_index += 1
+                    self.get_logger().info(f"TURN {self.turn_index}/{len(self.turn_plan)} COMPLETE")
+                    
+                    # Check if all turns are done
                     if self.turn_index >= len(self.turn_plan):
-                        self.search_house = True
-                    self.get_logger().info(f"TURN COMPLETE, index={self.turn_index}")
+                        self.all_turns_complete = True
+                        self.get_logger().info("ALL TURNS COMPLETE - Now searching for house")
+                    
                     cmd.angular.z = 0.0
                 
                 self.cmd_pub.publish(cmd)
                 return
 
-            if self.left_line and self.right_line and not self.search_house:
+            # Detect intersection and start next turn (only if turns remaining)
+            if self.left_line and self.right_line and not self.all_turns_complete:
                 if self.turn_index < len(self.turn_plan):
                     self.start_turn(self.turn_plan[self.turn_index])
+                    cmd.linear.x = 0.0
+                    cmd.angular.z = 0.0
                     self.cmd_pub.publish(cmd)
                     return
 
+            # Normal line following
             if self.line_found:
                 cmd.linear.x = 0.22
                 cmd.angular.z = -self.line_error * 0.003
             else:
+                # Lost line - turn based on last known position
                 cmd.linear.x = 0.0
                 cmd.angular.z = -np.sign(self.last_line_error) * 0.8
 
-            if self.left_line and self.right_line and not self.search_house:
-                if self.turn_index < len(self.turn_plan):
-                    self.start_turn(self.turn_plan[self.turn_index])
-                    self.cmd_pub.publish(cmd)
-                    return
-
-            if self.search_house and self.house_visible:
+            # House detection (only after all turns complete)
+            if self.all_turns_complete and self.house_visible:
                 self.house_seen_frames += 1
                 if self.house_seen_frames > 8:
                     self.mode = Mode.VERIFY_HOUSE
+                    self.get_logger().info("House detected - Switching to VERIFY_HOUSE mode")
             else:
                 self.house_seen_frames = 0
 
         elif self.mode == Mode.VERIFY_HOUSE:
+            # Continue following line toward house
             if self.line_found:
                 cmd.linear.x = 0.15
                 cmd.angular.z = -self.line_error * 0.003
 
+            # Stop when house is close enough
             if self.house_reached:
                 self.mode = Mode.STOP
+                self.get_logger().info("House reached - STOPPING")
 
         elif self.mode == Mode.STOP:
             cmd.linear.x = 0.0
