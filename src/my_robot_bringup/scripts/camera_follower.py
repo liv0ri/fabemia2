@@ -227,25 +227,28 @@ class CameraFollower(Node):
             angle += 2.0 * math.pi
         return angle
 
-    def start_turn(self, turn_right):
-        self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'}")
+    def start_turn(self, turn_right, half_turn=False):
+        self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
         self.doing_turn = True
         self.current_turn_right = turn_right
         self.start_yaw = self.current_yaw
-        
+
         # Calculate target: 90 degrees right is -pi/2, left is +pi/2
-        delta = -math.pi/2 if turn_right else math.pi/2
+        delta = (-math.pi/2 if turn_right else math.pi/2)
+        if half_turn:
+            delta *= 2  # make 180°
+
         self.target_yaw = self.normalize_angle(self.start_yaw + delta)
-
         self.get_logger().info(f"Start yaw: {self.start_yaw:.2f}, Target yaw: {self.target_yaw:.2f}")
-
         return self.target_yaw
+
 
     def control_loop(self):
         cmd = Twist()
-
         if self.turn_index == 0:
-            angle = self.start_turn(self.turn_plan[0])
+            # Check if starting from PO to HOUSE_2 or HOUSE_7 -> do 180°
+            half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
+            angle = self.start_turn(self.turn_plan[0], half_turn=half_turn)
             cmd.angular.z = angle
             self.cmd_pub.publish(cmd)
             return
