@@ -283,7 +283,13 @@ class CameraFollower(Node):
                 return
 
             # Detect intersection and start next turn (only if turns remaining)
-            if self.left_line and self.right_line and not self.all_turns_complete:
+            intersection_detected = (
+                (self.left_line and self.line_found) or
+                (self.right_line and self.line_found) or
+                (self.left_line and self.right_line and self.line_found)
+            )
+
+            if intersection_detected and not self.all_turns_complete:
                 if self.turn_index < len(self.turn_plan):
                     self.start_turn(self.turn_plan[self.turn_index])
                     cmd.linear.x = 0.0
