@@ -24,10 +24,19 @@ class CameraFollower(Node):
         super().__init__('camera_house_follower')
         # set a target house
         self.TARGET_HOUSE = target_house
-        # start with follow mode
+        self.start = start
         self.mode = Mode.FOLLOW_LINE
 
-        # Front - house colour detection
+        # Direction plan
+        self.turn_plan = directions[start][self.TARGET_HOUSE]
+        self.turn_index = 0
+        self.doing_turn = False
+        self.turn_start_time = None
+        self.current_turn_right = True
+        self.search_house = False
+        self.first_turn_done = False
+
+        # Subscriptions
         self.front_sub = self.create_subscription(
             Image,
             '/front_camera/image_raw',
@@ -153,8 +162,8 @@ class CameraFollower(Node):
             cx = int(M["m10"] / M["m00"])
             self.line_found = True
             self.line_error = cx - (w // 2)
-            self.last_line_seen = True        
-            self.last_line_error = self.line_error  
+            self.last_line_seen = True
+            self.last_line_error = self.line_error
         else:
             self.line_found = False
     
@@ -189,39 +198,51 @@ class CameraFollower(Node):
         self.house_visible = np.sum(mask > 0) > 1200
         self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
 
+    def start_turn(self, turn_right):
+        self.doing_turn = True
+        self.turn_start_time = self.get_clock().now()
+        self.current_turn_right = turn_right
+
     def control_loop(self):
         cmd = Twist()
+        # Force first turn immediately at start
+        if not self.first_turn_done:
+            self.start_turn(self.turn_plan[0])
+            self.first_turn_done = True
 
         if self.mode == Mode.FOLLOW_LINE:
-            # print("Follow mode")
-            # if line found move forward and steer to center 
+            if self.doing_turn:
+                cmd.angular.z = -1.5 if self.current_turn_right else 1.5
+                if (self.get_clock().now() - self.turn_start_time).nanoseconds > 6e8:
+                    self.doing_turn = False
+                    self.turn_index += 1
+                    if self.turn_index >= len(self.turn_plan):
+                        self.search_house = True
+                self.cmd_pub.publish(cmd)
+                return
+
+            if self.left_line and self.right_line and not self.search_house:
+                if self.turn_index < len(self.turn_plan):
+                    self.start_turn(self.turn_plan[self.turn_index])
+                    self.cmd_pub.publish(cmd)
+                    return
+
+
             if self.line_found:
                 # print("Line found")
                 cmd.linear.x = 0.22
                 cmd.angular.z = -self.line_error * 0.003
             else:
-                if not self.last_line_seen:
-                    print("Searching for line")
-                    # initial search: spin in place aggressively
-                    cmd.linear.x = 0.0
-                    cmd.angular.z = 2.0
-                else:
-                    print("Line lost")
-                    # line lost after being seen
-                    cmd.linear.x = 0.1
-                    if self.left_line and not self.right_line:
-                        cmd.angular.z = 0.8
-                    elif self.right_line and not self.left_line:
-                        cmd.angular.z = -0.8
-                    else:
-                        cmd.angular.z = -np.sign(self.last_line_error) * 0.8
-                        # Intersection hook 
-                        if self.left_line and self.right_line:
-                            pass  
-            
-            # Avoid false positives 
-            if self.house_visible:
-                # only switch to verify mode if seen for 8 consecutive frames
+                cmd.linear.x = 0.1
+                cmd.angular.z = -np.sign(self.last_line_error) * 0.8
+
+            if self.left_line and self.right_line and not self.search_house:
+                if self.turn_index < len(self.turn_plan):
+                    self.start_turn(self.turn_plan[self.turn_index])
+                    self.cmd_pub.publish(cmd)
+                    return
+
+            if self.search_house and self.house_visible:
                 self.house_seen_frames += 1
                 if self.house_seen_frames > 8:
                     self.mode = Mode.VERIFY_HOUSE
