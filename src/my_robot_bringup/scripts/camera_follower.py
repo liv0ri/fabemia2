@@ -243,13 +243,12 @@ class CameraFollower(Node):
 
     def control_loop(self):
         cmd = Twist()
-        if self.turn_index == 0:
-            # Check if starting from PO to HOUSE_2 or HOUSE_7 -> do 180°
+        if self.turn_index == 0 and not self.doing_turn:
             half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
-            angle = self.start_turn(self.turn_plan[0], half_turn=half_turn)
-            cmd.angular.z = angle
-            self.cmd_pub.publish(cmd)
+            self.start_turn(self.turn_plan[0], half_turn=half_turn)
+            self.cmd_pub.publish(Twist()) 
             return
+
 
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
