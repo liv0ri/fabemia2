@@ -282,7 +282,7 @@ class CameraFollower(Node):
                 
                 self.cmd_pub.publish(cmd)
                 return
-
+        
             # Detect intersection and start next turn (only if turns remaining)
             intersection_detected = (
                 (self.left_line and self.line_found) or
@@ -290,7 +290,7 @@ class CameraFollower(Node):
                 (self.left_line and self.right_line and self.line_found)
             )
 
-            if intersection_detected and not self.all_turns_complete:
+            if intersection_detected and not self.all_turns_complete and not self.doing_turn:
                 if self.turn_index < len(self.turn_plan):
                     #can we just go straight?
                     if((self.left_line and self.line_found and self.right_line==False and self.turn_plan[self.turn_index]==True) or 
@@ -314,14 +314,14 @@ class CameraFollower(Node):
                     return
 
             # Normal line following
-            if self.line_found:
+            if self.line_found and not self.doing_turn:
                 cmd.linear.x = 0.22
                 cmd.angular.z = -self.line_error * 0.003
 
                 if(self.mustIncrementIndex==True):
                     self.turn_index+=1
                     self.mustIncrementIndex=False
-            else:
+            elif not self.doing_turn:
                 # Lost line - turn based on last known position
                 cmd.linear.x = 0.0
                 cmd.angular.z = -np.sign(self.last_line_error) * 0.8
