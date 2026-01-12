@@ -230,7 +230,9 @@ class CameraFollower(Node):
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
         self.doing_turn = True
+        self.get_logger().info(f"actual start_yaw {self.start_yaw}, current_yaw {self.current_yaw}")
         self.start_yaw = self.normalize_angle(self.current_yaw)
+        self.get_logger().info(f"new start_yaw {self.start_yaw}")
 
         # Calculate target: 90 degrees right is -pi/2, left is +pi/2
         delta = (-math.pi/2 if turn_right else math.pi/2)
@@ -247,7 +249,7 @@ class CameraFollower(Node):
         if self.turn_index == 0 and not self.doing_turn:
             while((self.line_found and self.left_line==False) and (self.line_found and self.right_line==False)):
                 #reverse until you have 1 or both options for turning.
-                cmd.linear.x = -0.22
+                cmd.linear.x = -0.1
                 cmd.angular.z = 0.0
             half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
             self.start_turn(self.turn_plan[0], half_turn=half_turn)
