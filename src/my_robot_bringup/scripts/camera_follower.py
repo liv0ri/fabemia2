@@ -306,8 +306,10 @@ class CameraFollower(Node):
             )
 
             if intersection_detected and not self.all_turns_complete and not self.doing_turn:
+                self.get_logger().info("DEBUG: INTERSECTION DETECTED !!!")
                 if self.turn_index < len(self.turn_plan):
                     #can we just go straight?
+                    self.get_logger().info("DEBUG: GOING STRAIGHT AT INTERSECTION")
                     if((self.left_line and self.line_found and self.right_line==False and self.turn_plan[self.turn_index]==True) or 
                        (self.right_line and self.line_found and self.left_line==False and self.turn_plan[self.turn_index]==False)):
                         #yes - just walk forward
@@ -317,6 +319,7 @@ class CameraFollower(Node):
                         
                     else:
                         # no - must turn
+                        self.get_logger().info("DEBUG: TURNING AT INTERSECTION")
                         self.start_turn(self.turn_plan[self.turn_index])
                         cmd.linear.x = 0.0
                         cmd.angular.z = 0.0
@@ -330,6 +333,7 @@ class CameraFollower(Node):
 
             # Normal line following
             if self.line_found and not self.doing_turn:
+                self.get_logger().info("DEBUG: following line")
                 cmd.linear.x = 0.22
                 cmd.angular.z = -self.line_error * 0.003
 
@@ -338,6 +342,7 @@ class CameraFollower(Node):
                     self.mustIncrementIndex=False
             elif not self.doing_turn:
                 # Lost line - turn based on last known position
+                self.get_logger().info("DEBUG: lost line, reversing")
                 cmd.linear.x = 0.0
                 cmd.angular.z = -np.sign(self.last_line_error) * 0.8
 
