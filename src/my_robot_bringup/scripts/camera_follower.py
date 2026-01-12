@@ -251,7 +251,9 @@ class CameraFollower(Node):
                 #reverse until you have 1 or both options for turning.
                 cmd.linear.x = -0.1
                 cmd.angular.z = 0.0
+                self.get_logger().info("DEBUG: reversing")
             else:
+                self.get_logger().info("DEBUG: STOPPED reversing")
                 cmd.linear.x = 0.0
                 half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
                 self.start_turn(self.turn_plan[0], half_turn=half_turn)
@@ -262,6 +264,7 @@ class CameraFollower(Node):
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
             if self.doing_turn:
+                self.get_logger().info("DEBUG: turning")
                 cmd.linear.x = 0.0
                 
                 # Calculate shortest angular distance to target
@@ -280,6 +283,7 @@ class CameraFollower(Node):
                 
                 # Check if turn is complete (within ~3 degrees)
                 if abs(error) < 0.05:
+                    self.get_logger().info("DEBUG: STOPPED turning")
                     self.doing_turn = False
                     self.turn_index += 1
                     self.get_logger().info(f"TURN {self.turn_index}/{len(self.turn_plan)} COMPLETE")
