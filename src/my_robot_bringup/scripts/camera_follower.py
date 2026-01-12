@@ -223,7 +223,7 @@ class CameraFollower(Node):
     def normalize_angle(self, angle):
         while angle > (2.0 * math.pi):
             angle -= 2.0 * math.pi
-        while angle < (2.0 * -math.pi):
+        while angle < 0.0:
             angle += 2.0 * math.pi
         return angle
 
