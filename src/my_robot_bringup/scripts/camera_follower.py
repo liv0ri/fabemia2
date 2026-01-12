@@ -247,12 +247,14 @@ class CameraFollower(Node):
     def control_loop(self):
         cmd = Twist()
         if self.turn_index == 0 and not self.doing_turn:
-            while((self.line_found and self.left_line==False) and (self.line_found and self.right_line==False)):
+            if((self.line_found and self.left_line==False) and (self.line_found and self.right_line==False)):
                 #reverse until you have 1 or both options for turning.
                 cmd.linear.x = -0.1
                 cmd.angular.z = 0.0
-            half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
-            self.start_turn(self.turn_plan[0], half_turn=half_turn)
+            else:
+                cmd.linear.x = 0.0
+                half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
+                self.start_turn(self.turn_plan[0], half_turn=half_turn)
             self.cmd_pub.publish(Twist()) 
             return
 
@@ -272,6 +274,9 @@ class CameraFollower(Node):
                 # Clamp rotation speed
                 max_rot_speed = 0.8
                 cmd.angular.z = max(min(cmd.angular.z, max_rot_speed), -max_rot_speed)
+                
+                #TEMPORARY JUST TO SEE TURN
+                cmd.angular.z = 0.8
                 
                 # Check if turn is complete (within ~3 degrees)
                 if abs(error) < 0.05:
