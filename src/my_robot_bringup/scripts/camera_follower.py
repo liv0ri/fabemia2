@@ -230,7 +230,7 @@ class CameraFollower(Node):
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
         self.doing_turn = True
-        self.start_yaw = self.current_yaw
+        self.start_yaw = self.normalize_angle(self.current_yaw)
 
         # Calculate target: 90 degrees right is -pi/2, left is +pi/2
         delta = (-math.pi/2 if turn_right else math.pi/2)
@@ -261,7 +261,7 @@ class CameraFollower(Node):
                 cmd.linear.x = 0.0
                 
                 # Calculate shortest angular distance to target
-                error = self.normalize_angle(self.target_yaw - self.current_yaw)
+                error = self.normalize_angle(self.target_yaw - self.normalize_angle(self.current_yaw))
                 
                 # Proportional control for turning
                 kp_rot = 2.5
