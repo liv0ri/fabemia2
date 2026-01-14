@@ -221,11 +221,21 @@ class CameraFollower(Node):
         self.current_yaw = math.atan2(siny_cosp, cosy_cosp)
 
     def normalize_angle(self, angle):
-        while angle > (2.0 * math.pi):
+        while angle > (1.0 * math.pi):
             angle -= 2.0 * math.pi
         while angle < 0.0:
             angle += 2.0 * math.pi
         return angle
+    
+    """
+    #normalize_angle may need to change to this to work properly
+    def angle_error(self, target, current):
+    return math.atan2(
+        math.sin(target - current),
+        math.cos(target - current)
+    )
+
+    """
 
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
@@ -257,7 +267,7 @@ class CameraFollower(Node):
                 cmd.linear.x = 0.0
                 half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
                 self.start_turn(self.turn_plan[0], half_turn=half_turn)
-            self.cmd_pub.publish(Twist()) 
+            self.cmd_pub.publish(cmd) 
             return
 
 
@@ -279,7 +289,7 @@ class CameraFollower(Node):
                 cmd.angular.z = max(min(cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
                 #TEMPORARY JUST TO SEE TURN
-                cmd.angular.z = 0.8
+                #cmd.angular.z = 0.8
                 
                 # Check if turn is complete (within ~3 degrees)
                 if abs(error) < 0.05:
@@ -324,9 +334,9 @@ class CameraFollower(Node):
                         cmd.linear.x = 0.0
                         cmd.angular.z = 0.0
 
-                        #walk forwards to clear the intersection
-                        cmd.linear.x = 0.22
-                        cmd.angular.z = -self.line_error * 0.003
+                        #walk forwards to clear the intersection - this is badly timed but we need a way of clearing the intersection.
+                        #cmd.linear.x = 0.22
+                        #cmd.angular.z = -self.line_error * 0.003
                         
                         self.cmd_pub.publish(cmd)
                     return
