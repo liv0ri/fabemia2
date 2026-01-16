@@ -254,25 +254,28 @@ class CameraFollower(Node):
 
     def control_loop(self):
         cmd = Twist()
+        
+        # Initial setup - get robot moving forward before first turn
         if self.turn_index == 0 and not self.doing_turn:
-            if((self.line_found and self.left_line==False) and (self.line_found and self.right_line==False)):
-                #reverse until you have 1 or both options for turning.
-                cmd.linear.x = -0.1
+            if not self.line_found:
+                # Move forward slowly to find the line
+                cmd.linear.x = 0.1
                 cmd.angular.z = 0.0
-                self.get_logger().info("DEBUG: reversing")
+                self.get_logger().info("DEBUG: searching for initial line")
             else:
-                self.get_logger().info("DEBUG: STOPPED reversing")
-                cmd.linear.x = 0.0
+                # Line found, start first turn
+                self.get_logger().info("DEBUG: found line, starting first turn")
                 half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
                 self.start_turn(self.turn_plan[0], half_turn=half_turn)
-            self.cmd_pub.publish(cmd) 
+                cmd.linear.x = 0.0
+                cmd.angular.z = 0.0
+            
+            self.cmd_pub.publish(cmd)
             return
-
 
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
             if self.doing_turn:
-                self.get_logger().info("DEBUG: turning")
                 cmd.linear.x = 0.0
                 
                 # Calculate shortest angular distance to target
@@ -305,8 +308,8 @@ class CameraFollower(Node):
                 
                 self.cmd_pub.publish(cmd)
                 return
-        
-            # Detect intersection and start next turn (only if turns remaining)
+            
+            # Detect intersection and start next turn
             intersection_detected = (
                 (self.left_line and self.line_found) or
                 (self.right_line and self.line_found) or
@@ -314,29 +317,25 @@ class CameraFollower(Node):
             )
 
             if intersection_detected and not self.all_turns_complete and not self.doing_turn:
-                self.get_logger().info("DEBUG: INTERSECTION DETECTED !!!")
+                self.get_logger().info("DEBUG: INTERSECTION DETECTED")
                 if self.turn_index < len(self.turn_plan):
-                    #can we just go straight?
-                    self.get_logger().info("DEBUG: GOING STRAIGHT AT INTERSECTION")
-                    if((self.left_line and self.line_found and self.right_line==False and self.turn_plan[self.turn_index]==True) or 
-                       (self.right_line and self.line_found and self.left_line==False and self.turn_plan[self.turn_index]==False)):
-                        #yes - just walk forward
+                    # Check if we can go straight
+                    can_go_straight = (
+                        (self.left_line and self.line_found and not self.right_line and self.turn_plan[self.turn_index]) or 
+                        (self.right_line and self.line_found and not self.left_line and not self.turn_plan[self.turn_index])
+                    )
+                    
+                    if can_go_straight:
                         cmd.linear.x = 0.22
                         cmd.angular.z = max(min(cmd.angular.z, 0.8), -0.8)
                         self.mustIncrementIndex = True
                         
                     else:
-                        # no - must turn
-                        self.get_logger().info("DEBUG: TURNING AT INTERSECTION")
                         self.start_turn(self.turn_plan[self.turn_index])
                         cmd.linear.x = 0.0
                         cmd.angular.z = 0.0
-
-                        #walk forwards to clear the intersection - this is badly timed but we need a way of clearing the intersection.
-                        #cmd.linear.x = 0.22
-                        #cmd.angular.z = -self.line_error * 0.003
-                        
-                        self.cmd_pub.publish(cmd)
+                    
+                    self.cmd_pub.publish(cmd)
                     return
 
             # Normal line following
@@ -352,7 +351,7 @@ class CameraFollower(Node):
                 # Lost line - turn based on last known position
                 self.get_logger().info("DEBUG: lost line, reversing")
                 cmd.linear.x = 0.0
-                cmd.angular.z = -np.sign(self.last_line_error) * 0.8
+                cmd.angular.z = -np.sign(self.last_line_error) * 0.5
 
             # House detection
             if self.all_turns_complete and self.house_visible:
