@@ -232,8 +232,7 @@ class CameraFollower(Node):
         self.odom_ready = True
 
     def normalize_angle(self, angle):
-        math.atan2(math.sin(angle), math.cos(angle))
-        return angle
+        return math.atan2(math.sin(angle), math.cos(angle))
     
     #normalize_angle may need to change to this to work properly
     def angle_error(self, target, current):
