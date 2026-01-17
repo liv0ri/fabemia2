@@ -405,7 +405,7 @@ def main():
     rclpy.init()
     node = CameraFollower()
     node.get_logger().info("Waiting for simulation to initialize...")
-    time.sleep(2.0) 
+    time.sleep(30.0) 
 
     node.get_logger().info("Starting control loop...")
     try:
