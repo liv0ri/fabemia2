@@ -12,6 +12,7 @@ import cv2
 from enum import Enum
 from config import directions
 import math
+import time
 
 # robots states
 class Mode(Enum):
@@ -103,12 +104,12 @@ class CameraFollower(Node):
         # Publishes velocity commands to the robot
         # linear.x - forward/backward
         # angular.z - left/right
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.publisher = self.create_publisher(Twist, '/cmd_vel', 1)
 
         # Loop every 0.05 seconds
-        self.create_timer(0.05, self.control_loop)
-
-
+        self.cmd = Twist()
+        self.control_timer = self.create_timer(0.05, self.control_loop)
+        self.publish_timer = self.create_timer(0.05, self.publish_current_cmd)
         # Exact RGB colors from Gazebo diffuse values
         colors = {
             "HOUSE_1": (97, 63, 0),
@@ -150,6 +151,13 @@ class CameraFollower(Node):
 
         # self.get_logger().info("Camera House Follower Started")
         self.get_logger().info(f"Target house: {self.TARGET_HOUSE}")
+
+    def publish_current_cmd(self):
+        self.publisher.publish(self.cmd)
+        
+    def publish_velocity(self, linear, angular):
+        self.cmd.linear.x = linear
+        self.cmd.angular.z = angular
 
     # Helper function used throughout this class
     def detect_black(self, hsv):
@@ -237,6 +245,32 @@ class CameraFollower(Node):
             math.cos(target - current)
         )
 
+    def turn_to_angle(self, target_yaw):
+        self.get_logger().info(f"Turning to angle {target_yaw:.2f}")
+
+        angular_speed = 0.3
+        rate = self.create_rate(10)
+
+        while rclpy.ok():
+            error = self.angle_error(target_yaw, self.current_yaw)
+
+            if abs(error) < 0.05:
+                break
+
+            self.cmd.linear.x = 0.0
+            self.cmd.angular.z = angular_speed * np.sign(error)
+
+            self.publisher.publish(self.cmd)
+
+            rclpy.spin_once(self, timeout_sec=0.01)
+            rate.sleep()
+
+        self.cmd.angular.z = 0.0
+        self.publisher.publish(self.cmd)
+
+        self.get_logger().info("Initial turn complete")
+
+
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
         self.doing_turn = True
@@ -255,43 +289,32 @@ class CameraFollower(Node):
 
 
     def control_loop(self):
-        cmd = Twist()
         if not self.odom_ready:
             self.get_logger().info("Waiting for odometry...")
-            self.cmd_pub.publish(Twist())
+            self.publisher.publish(Twist())
             return
 
         # Initial setup 
         if self.turn_index == 0 and not self.doing_turn:
             self.get_logger().info("DEBUG: initial setup before first turn")
-            cmd.linear.x = -0.1
-            self.cmd_pub.publish(cmd)
             half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
             self.start_turn(self.turn_plan[0] == "right", half_turn=half_turn)
-            cmd.linear.x = 0.0
-            cmd.angular.z = 0.0
-            
-            self.cmd_pub.publish(cmd)
-            return
 
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
             if self.doing_turn:
-                cmd.linear.x = 0.0
+                self.cmd.linear.x = 0.0
                 
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
                 
                 # Proportional control for turning
-                kp_rot = 2.5
-                cmd.angular.z = kp_rot * error
+                kp_rot = 1.2
+                self.cmd.angular.z = kp_rot * error
                 
                 # Clamp rotation speed
-                max_rot_speed = 0.8
-                cmd.angular.z = max(min(cmd.angular.z, max_rot_speed), -max_rot_speed)
-                
-                #TEMPORARY JUST TO SEE TURN
-                #cmd.angular.z = 0.8
+                max_rot_speed = 0.5
+                self.cmd.angular.z = max(min(self.cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
                 # Check if turn is complete (within ~3 degrees)
                 if abs(error) < 0.05:
@@ -305,10 +328,9 @@ class CameraFollower(Node):
                         self.all_turns_complete = True
                         self.get_logger().info("ALL TURNS COMPLETE - Now searching for house")
                     
-                    cmd.angular.z = 0.0
+                    self.cmd.angular.z = 0.0
                 
-                self.cmd_pub.publish(cmd)
-                return
+                self.publisher.publish(self.cmd)
             
             # Detect intersection and start next turn
             intersection_detected = (
@@ -327,23 +349,22 @@ class CameraFollower(Node):
                     )
                     
                     if can_go_straight:
-                        cmd.linear.x = 0.22
-                        cmd.angular.z = max(min(cmd.angular.z, 0.8), -0.8)
+                        self.cmd.linear.x = 0.22
+                        self.cmd.angular.z = max(min(self.cmd.angular.z, 0.8), -0.8)
                         self.mustIncrementIndex = True
                         
                     else:
                         self.start_turn(self.turn_plan[self.turn_index])
-                        cmd.linear.x = 0.0
-                        cmd.angular.z = 0.0
+                        self.cmd.linear.x = 0.0
+                        self.cmd.angular.z = 0.0
                     
-                    self.cmd_pub.publish(cmd)
-                    return
+                    self.publisher.publish(self.cmd)
 
             # Normal line following
             if self.line_found and not self.doing_turn:
                 self.get_logger().info("DEBUG: following line")
-                cmd.linear.x = 0.22
-                cmd.angular.z = max(min(cmd.angular.z, 0.8), -0.8)
+                self.cmd.linear.x = 0.22
+                self.cmd.angular.z = max(min(self.cmd.angular.z, 0.8), -0.8)
 
                 if(self.mustIncrementIndex==True):
                     self.turn_index+=1
@@ -351,8 +372,8 @@ class CameraFollower(Node):
             elif not self.doing_turn:
                 # Lost line - turn based on last known position
                 self.get_logger().info("DEBUG: lost line, reversing")
-                cmd.linear.x = 0.0
-                cmd.angular.z = -np.sign(self.last_line_error) * 0.5
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = -np.sign(self.last_line_error) * 0.5
 
             # House detection
             if self.all_turns_complete and self.house_visible:
@@ -366,8 +387,8 @@ class CameraFollower(Node):
         elif self.mode == Mode.VERIFY_HOUSE:
             # Continue following line toward house
             if self.line_found:
-                cmd.linear.x = 0.05
-                cmd.angular.z = max(min(cmd.angular.z, 0.8), -0.8)
+                self.cmd.linear.x = 0.05
+                self.cmd.angular.z = max(min(self.cmd.angular.z, 0.8), -0.8)
 
             # Stop when house is close enough
             if self.house_reached:
@@ -375,15 +396,18 @@ class CameraFollower(Node):
                 self.get_logger().info("House reached - STOPPING")
 
         elif self.mode == Mode.STOP:
-            cmd.linear.x = 0.0
-            cmd.angular.z = 0.0
-        self.get_logger().info(f"CMD: v={cmd.linear.x:.2f}, w={cmd.angular.z:.2f}")
-        self.cmd_pub.publish(cmd)
+            self.cmd.linear.x = 0.0
+            self.cmd.angular.z = 0.0
+        self.get_logger().info(f"CMD: v={self.cmd.linear.x:.2f}, w={self.cmd.angular.z:.2f}")
+        self.publisher.publish(self.cmd)
 
 def main():
     rclpy.init()
     node = CameraFollower()
+    node.get_logger().info("Waiting for simulation to initialize...")
+    time.sleep(2.0) 
 
+    node.get_logger().info("Starting control loop...")
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
@@ -391,7 +415,7 @@ def main():
 
     # Stop the robot
     stop_cmd = Twist()
-    node.cmd_pub.publish(stop_cmd)
+    node.publisher.publish(stop_cmd)
     node.get_logger().info('Shutting down - Robot stopped')
 
     node.destroy_node()
