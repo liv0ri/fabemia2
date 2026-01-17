@@ -372,10 +372,30 @@ class CameraFollower(Node):
                     self.turn_index+=1
                     self.mustIncrementIndex=False
             elif not self.doing_turn:
-                # Lost line - turn based on last known position
-                self.get_logger().info("DEBUG: lost line, reversing")
-                self.cmd.linear.x = 0.0
-                self.cmd.angular.z = -np.sign(self.last_line_error) * 0.5
+                self.get_logger().info("DEBUG: lost line – camera-based recovery")
+
+                self.cmd.linear.x = 0.05  # creep forward slowly
+
+                if self.left_line and not self.right_line:
+                    self.get_logger().info("DEBUG: line seen on LEFT camera")
+                    # Line on left → turn left
+                    self.cmd.angular.z = 0.4
+
+                elif self.right_line and not self.left_line:
+                    self.get_logger().info("DEBUG: line seen on RIGHT camera")
+                    # Line on right → turn right
+                    self.cmd.angular.z = -0.4
+
+                elif self.left_line and self.right_line:
+                    self.get_logger().info("DEBUG: line seen on BOTH side cameras")
+                    # Intersection / uncertain → go straight slowly
+                    self.cmd.angular.z = 0.0
+
+                else:
+                    self.get_logger().info("DEBUG: line NOT seen on ANY camera")
+                    # No camera sees line → fallback to last known direction
+                    self.cmd.linear.x = 0.0
+                    self.cmd.angular.z = -np.sign(self.last_line_error) * 0.3
 
             # House detection
             if self.all_turns_complete and self.house_visible:
@@ -407,7 +427,7 @@ def main():
     rclpy.init()
     node = CameraFollower()
     node.get_logger().info("Waiting for simulation to initialize...")
-    time.sleep(30.0) 
+    time.sleep(5.0) 
 
     node.get_logger().info("Starting control loop...")
     try:
