@@ -4,22 +4,22 @@
     <!-- Friction for wheels -->
     <gazebo reference="rear_left_wheel_link">
         <mu1 value="1.0" />
-        <mu2 value="1.0" />
+        <mu2 value="0.2" />
     </gazebo>
 
     <gazebo reference="rear_right_wheel_link">
         <mu1 value="1.0" />
-        <mu2 value="1.0" />
+        <mu2 value="0.2" />
     </gazebo>
 
     <gazebo reference="front_left_wheel_link">
         <mu1 value="1.0" />
-        <mu2 value="1.0" />
+        <mu2 value="0.2" />
     </gazebo>
 
     <gazebo reference="front_right_wheel_link">
         <mu1 value="1.0" />
-        <mu2 value="1.0" />
+        <mu2 value="0.2" />
     </gazebo>
 
     <!-- Differential Drive Plugin -->

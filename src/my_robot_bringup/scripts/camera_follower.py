@@ -285,7 +285,7 @@ class CameraFollower(Node):
         self.target_yaw = self.normalize_angle(self.start_yaw + delta)
         self.get_logger().info(f"Start yaw: {self.start_yaw:.2f}, Target yaw: {self.target_yaw:.2f}")
         self.get_logger().info(f"TURN RIGHT={turn_right} YAW: {self.current_yaw:.2f} → {self.target_yaw:.2f}")
-        return self.target_yaw
+        #return self.target_yaw
 
 
     def control_loop(self):
@@ -303,7 +303,7 @@ class CameraFollower(Node):
         if self.mode == Mode.FOLLOW_LINE:
             # Handle active turn
             if self.doing_turn:
-                self.cmd.linear.x = 0.0
+                self.cmd.linear.x = 0.1 #I (DEMETRIA) CHANGED THIS TO SEE IF IT WILL HELP IT MOVE
                 
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
@@ -332,33 +332,35 @@ class CameraFollower(Node):
                 
                 self.publisher.publish(self.cmd)
             
-            # Detect intersection and start next turn
-            intersection_detected = (
-                (self.left_line and self.line_found) or
-                (self.right_line and self.line_found) or
-                (self.left_line and self.right_line and self.line_found)
-            )
+            #WE SHOULD STOP SOMEWHERE HERE
+            else:
+                # Detect intersection and start next turn
+                intersection_detected = (
+                    (self.left_line and self.line_found) or
+                    (self.right_line and self.line_found) or
+                    (self.left_line and self.right_line and self.line_found)
+                )
 
-            if intersection_detected and not self.all_turns_complete and not self.doing_turn:
-                self.get_logger().info("DEBUG: INTERSECTION DETECTED")
-                if self.turn_index < len(self.turn_plan):
-                    # Check if we can go straight
-                    can_go_straight = (
-                        (self.left_line and self.line_found and not self.right_line and self.turn_plan[self.turn_index]) or 
-                        (self.right_line and self.line_found and not self.left_line and not self.turn_plan[self.turn_index])
-                    )
-                    
-                    if can_go_straight:
-                        self.cmd.linear.x = 0.22
-                        self.cmd.angular.z = max(min(self.cmd.angular.z, 0.8), -0.8)
-                        self.mustIncrementIndex = True
+                if intersection_detected and not self.all_turns_complete and not self.doing_turn:
+                    self.get_logger().info("DEBUG: INTERSECTION DETECTED")
+                    if self.turn_index < len(self.turn_plan):
+                        # Check if we can go straight
+                        can_go_straight = (
+                            (self.left_line and self.line_found and not self.right_line and self.turn_plan[self.turn_index]) or 
+                            (self.right_line and self.line_found and not self.left_line and not self.turn_plan[self.turn_index])
+                        )
                         
-                    else:
-                        self.start_turn(self.turn_plan[self.turn_index])
-                        self.cmd.linear.x = 0.0
-                        self.cmd.angular.z = 0.0
-                    
-                    self.publisher.publish(self.cmd)
+                        if can_go_straight:
+                            self.cmd.linear.x = 0.22
+                            self.cmd.angular.z = max(min(self.cmd.angular.z, 0.8), -0.8)
+                            self.mustIncrementIndex = True
+                            
+                        else:
+                            self.start_turn(self.turn_plan[self.turn_index])
+                            self.cmd.linear.x = 0.0  # !!!!   why are we setting this to 0?
+                            self.cmd.angular.z = 0.0 # !!!!
+                        
+                        self.publisher.publish(self.cmd)
 
             # Normal line following
             if self.line_found and not self.doing_turn:
@@ -398,7 +400,7 @@ class CameraFollower(Node):
         elif self.mode == Mode.STOP:
             self.cmd.linear.x = 0.0
             self.cmd.angular.z = 0.0
-        self.get_logger().info(f"CMD: v={self.cmd.linear.x:.2f}, w={self.cmd.angular.z:.2f}")
+        #self.get_logger().info(f"CMD: v={self.cmd.linear.x:.2f}, w={self.cmd.angular.z:.2f}")
         self.publisher.publish(self.cmd)
 
 def main():
