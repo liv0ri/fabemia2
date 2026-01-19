@@ -22,7 +22,6 @@ class TSPRouteServer(Node):
         )       
         # self.get_logger().info("TSP Route Calculator ready.")
         # Publisher for optimized route
-        self.route_pub = self.create_publisher(String, 'tsp_route', 10)
         self.graph = graph
         self.targets = []
     
