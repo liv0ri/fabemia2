@@ -24,22 +24,22 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
-  scripts/tsp_solver/deliver_robot_tsp_client.py
+  scripts/deliver_robot_tsp_client.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
-  scripts/tsp_solver/tsp_config.py
+  scripts/tsp_config.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
-  scripts/tsp_solver/tsp_route_calculator.py
+  scripts/tsp_route_calculator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
-  scripts/tsp_solver/tsp_solver_node.py
+  scripts/tsp_solver_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

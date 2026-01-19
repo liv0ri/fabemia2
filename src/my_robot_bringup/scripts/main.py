@@ -6,7 +6,7 @@ import random
 import json
 import subprocess
 import time
-from tsp_solver.tsp_route_calculator import TSPRouteServer
+from tsp_route_calculator import TSPRouteServer
 
 HOUSES = [f'HOUSE_{i}' for i in range(1, 11)]
 
