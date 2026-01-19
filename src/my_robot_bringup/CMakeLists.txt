@@ -34,6 +34,11 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
+  scripts/deliver_robot_tsp_client.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
   scripts/main.py
   DESTINATION lib/${PROJECT_NAME}
 )

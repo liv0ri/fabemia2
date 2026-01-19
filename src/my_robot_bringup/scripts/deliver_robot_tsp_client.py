@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from example_interfaces.srv import Trigger
 import json
+import time
 
 class DeliverobotTSPClient(Node):
     def __init__(self):
@@ -14,24 +15,38 @@ class DeliverobotTSPClient(Node):
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Waiting for TSP service...')
 
-        # Send request
-        request = Trigger.Request()
-        future = self.client.call_async(request)
-        future.add_done_callback(self.callback_response)
+        # Keep calling until a valid response is returned
+        while rclpy.ok():
+            request = Trigger.Request()
+            future = self.client.call_async(request)
+            rclpy.spin_until_future_complete(self, future)
+            response = future.result()
+
+            if response.success:
+                data = json.loads(response.message)
+                self.get_logger().info(f"Full Path (including intermediate nodes) optimised: {data['route']}")
+                break
+            else:
+                self.get_logger().warn(f"{response.message}")
+                self.get_logger().info("Retrying in 1 second...")
+                time.sleep(1)
 
     def callback_response(self, future):
         response = future.result()
+        while not response.success:
+            self.get_logger().warn(f"TSP service not ready: {response.message}")
+        
         data = json.loads(response.message)
-        self.get_logger().info(f"TSP {data['targets_order']}")
-        self.get_logger().info(f"Full Path (including intermediate nodes): {data['route']}")
-        self.get_logger().info(f"Total Distance: {data['total_distance']}")
+        # self.get_logger().info(f"TSP {data['targets_order']}")
+        self.get_logger().info(f"Full Path (including intermediate nodes) optimised: {data['route']}")
+        # self.get_logger().info(f"Total Distance: {data['total_distance']}")
 
-# def main(args=None):
-#     rclpy.init(args=args)
-#     node = DeliverobotTSPClient()
-#     node.call_response()
-#     rclpy.spin(node)
-#     rclpy.shutdown()
+def main(args=None):
+    rclpy.init(args=args)
+    node = DeliverobotTSPClient()
+    node.call_response()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()

@@ -20,50 +20,51 @@ class MissionController(Node):
             10
         )
         self.optimized_targets = None
+        self.current = 'PO' 
+
+        # Publish targets after 1 second
+        self.create_timer(1.0, self.publish_targets_once)
+        self.targets_sent = False
 
     def generate_targets(self):
         return random.sample(HOUSES, 3)
 
-    def publish_targets(self, targets):
-        msg = String()
-        msg.data = json.dumps(targets)
-        self.publisher.publish(msg)
-        self.get_logger().info(f"Published targets: {targets}")
+    def publish_targets_once(self):
+        if not self.targets_sent:
+            targets = self.generate_targets()
+            msg = String()
+            msg.data = json.dumps(targets)
+            self.publisher.publish(msg)
+            self.get_logger().info(f"Published targets: {targets}")
+            self.targets_sent = True
 
     def route_callback(self, msg):
-        self.optimized_targets = json.loads(msg.data)
-        self.get_logger().info(f"Received optimized route: {self.optimized_targets}")
+        if self.optimized_targets is None:
+            self.optimized_targets = json.loads(msg.data)
+            self.get_logger().info(f"Received optimized route: {self.optimized_targets}")
+            self.start_mission()  # Trigger the mission automatically
 
     def go_to_house(self, start, target):
         self.get_logger().info(f"Navigating from {start} → {target}")
         subprocess.run([
-            'ros2', 'run', 'my_robot_bringup/scripts', 'camera_follower',
+            'ros2', 'run', 'my_robot_bringup', 'camera_follower',
             '--ros-args',
             '-p', f'target_house:={target}',
             '-p', f'start:={start}'
         ])
 
-    def run_mission(self):
-        targets = self.generate_targets()
-        self.publish_targets(targets)
-
-        # Wait until the server publishes the optimized route
-        while self.optimized_targets is None:
-            rclpy.spin_once(self, timeout_sec=0.1)
-
-        current = 'PO'
+    def start_mission(self):
         for house in self.optimized_targets:
-            self.go_to_house(current, house)
-            current = house
+            self.go_to_house(self.current, house)
+            self.current = house
             time.sleep(2)
-
-        self.go_to_house(current, 'PO')
+        self.go_to_house(self.current, 'PO')
         self.get_logger().info("Mission complete")
 
 def main():
     rclpy.init()
     node = MissionController()
-    node.run_mission()
+    rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 

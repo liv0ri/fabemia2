@@ -15,12 +15,12 @@ class TSPRouteServer(Node):
         super().__init__('tsp_route_calculator')
         self.srv = self.create_service(Trigger, 'calculate_tsp_route', self.calculate_callback)
         self.subscription = self.create_subscription(
-                    String,
-                    'tsp_targets',
-                    self.target_callback,
-                    10
-                )       
-        self.get_logger().info("TSP Route Calculator ready.")
+            String,
+            'tsp_targets',
+            self.target_callback,
+            10
+        )       
+        # self.get_logger().info("TSP Route Calculator ready.")
         # Publisher for optimized route
         self.route_pub = self.create_publisher(String, 'tsp_route', 10)
         self.graph = graph
@@ -34,28 +34,21 @@ class TSPRouteServer(Node):
     def calculate_callback(self, _, response):
         if not self.targets:
             self.get_logger().warn("No targets received yet!")
-            return None
-        start_time = time.time()
+            response.success = False
+            response.message = "No targets received yet."
+            return response  # <- must return response, not None
 
         solver = GraphTSP(self.graph)
         start = 'PO'
         route = solver.nearest_neighbour_tsp(start, self.targets)
         optimized = solver.two_opt(route)
-        # self.get_logger().info("Using NN")
-
-        # solver = BruteForceTSP(self.graph)
-        # optimized = solver.brute_force_tsp(start, self.targets)
-        # self.get_logger().info("Using BF")
-
 
         response.success = True
-        self.get_logger().info(f"Time taken {time.time()-start_time}")
         response.message = json.dumps({
             'route': optimized,
-            'targets_order': [n for n in optimized if n in self.targets],  
+            'targets_order': [n for n in optimized if n in self.targets],
             'total_distance': solver.total_distance(optimized)
         })
-        self.get_logger().info(f"Full path: {optimized}")
         self.get_logger().info(f"Targets order: {[n for n in optimized if n in self.targets]}")
         return response
 
@@ -113,5 +106,11 @@ class TSPRouteServer(Node):
 #     rclpy.spin(node)
 #     rclpy.shutdown()
 
-# if __name__ == '__main__':
-#     main()
+def main():
+    rclpy.init()
+    node = TSPRouteServer() 
+    rclpy.spin(node)          
+    rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
