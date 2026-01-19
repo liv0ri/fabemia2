@@ -26,12 +26,12 @@ class DeliverobotTSPClient(Node):
         self.get_logger().info(f"Full Path (including intermediate nodes): {data['route']}")
         self.get_logger().info(f"Total Distance: {data['total_distance']}")
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = DeliverobotTSPClient()
-    node.call_response()
-    rclpy.spin(node)
-    rclpy.shutdown()
+# def main(args=None):
+#     rclpy.init(args=args)
+#     node = DeliverobotTSPClient()
+#     node.call_response()
+#     rclpy.spin(node)
+#     rclpy.shutdown()
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

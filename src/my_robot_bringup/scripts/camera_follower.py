@@ -22,16 +22,23 @@ class Mode(Enum):
 
 class CameraFollower(Node):
     # call it with the house its finding
-    def __init__(self, target_house="HOUSE_2", start="PO"):
+    # def __init__(self, target_house="HOUSE_2", start="PO"):
+    #     super().__init__('camera_house_follower')
+    #     # set a target house
+    #     self.TARGET_HOUSE = target_house
+    #     # The start position
+    #     self.start = start
+    def __init__(self):
         super().__init__('camera_house_follower')
-        # set a target house
-        self.TARGET_HOUSE = target_house
-        # The start position
-        self.start = start
+        self.declare_parameter('target_house', 'PO')
+        self.declare_parameter('start', 'PO')
+
+        self.TARGET_HOUSE = self.get_parameter('target_house').value
+        self.start = self.get_parameter('start').value
         self.mode = Mode.FOLLOW_LINE
 
         # Direction plan
-        self.turn_plan = directions[start][self.TARGET_HOUSE]
+        self.turn_plan = directions[self.start][self.TARGET_HOUSE]
         self.get_logger().info(f"Turning plan: {self.turn_plan}")
         self.turn_index = 0
         self.doing_turn = False
@@ -425,25 +432,25 @@ class CameraFollower(Node):
         #self.get_logger().info(f"CMD: v={self.cmd.linear.x:.2f}, w={self.cmd.angular.z:.2f}")
         self.publisher.publish(self.cmd)
 
-def main():
-    rclpy.init()
-    node = CameraFollower()
-    node.get_logger().info("Waiting for simulation to initialize...")
-    time.sleep(5.0) 
+# def main():
+#     rclpy.init()
+#     node = CameraFollower()
+#     node.get_logger().info("Waiting for simulation to initialize...")
+#     time.sleep(5.0) 
 
-    node.get_logger().info("Starting control loop...")
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+#     node.get_logger().info("Starting control loop...")
+#     try:
+#         rclpy.spin(node)
+#     except KeyboardInterrupt:
+#         pass
 
-    # Stop the robot
-    stop_cmd = Twist()
-    node.publisher.publish(stop_cmd)
-    node.get_logger().info('Shutting down - Robot stopped')
+#     # Stop the robot
+#     stop_cmd = Twist()
+#     node.publisher.publish(stop_cmd)
+#     node.get_logger().info('Shutting down - Robot stopped')
 
-    node.destroy_node()
-    rclpy.shutdown()
+#     node.destroy_node()
+#     rclpy.shutdown()
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
