@@ -29,11 +29,6 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
-  scripts/tsp_config.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(PROGRAMS
   scripts/tsp_route_calculator.py
   DESTINATION lib/${PROJECT_NAME}
 )
