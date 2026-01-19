@@ -205,14 +205,14 @@
     <joint name="rear_left_wheel_joint" type="continuous">
         <parent link="base_link"/>
         <child link="rear_left_wheel_link"/>
-        <origin xyz="0 ${(base_width/2.0) - 0.03} -0.05" rpy="0 0 0"/>
+        <origin xyz="0 ${(base_width/2.0) + 0.03} -0.125" rpy="0 0 0"/>
         <axis xyz="0 1 0"/>
     </joint>
 
     <joint name="rear_right_wheel_joint" type="continuous">
         <parent link="base_link"/>
         <child link="rear_right_wheel_link"/>
-        <origin xyz="0 ${-(base_width/2.0) + 0.03} -0.05" rpy="0 0 0"/>
+        <origin xyz="0 ${-(base_width/2.0) - 0.03} -0.125" rpy="0 0 0"/>
         <axis xyz="0 1 0"/>
     </joint>
 
@@ -223,37 +223,37 @@
     <joint name="front_caster_joint" type="fixed">
         <parent link="base_link"/>
         <child link="front_caster_link"/>
-        <origin xyz="0.3 0 -0.05" rpy="0 0 0"/>
+        <origin xyz="0.3 0 -0.175" rpy="0 0 0"/>
     </joint>
 
     <link name="front_caster_link">
         <visual>
-            <geometry><sphere radius="${wheel_radius}"/></geometry>
+            <geometry><sphere radius="${wheel_radius/1.5}"/></geometry>
             <material name="rubber_black"><color rgba="0.1 0.1 0.1 1"/></material>
         </visual>
         <collision>
             <geometry>
-            <sphere radius="${wheel_radius}"/>
+            <sphere radius="${wheel_radius/1.5}"/>
             </geometry>
         </collision>
-        <xacro:sphere_inertia m="0.5" r="${wheel_radius}" o_xyz="0 0 0" o_rpy="0 0 0"/>
+        <xacro:sphere_inertia m="0.5" r="${wheel_radius/1.5}" o_xyz="0 0 0" o_rpy="0 0 0"/>
     </link>
 
     <joint name="rear_caster_joint" type="fixed">
         <parent link="base_link"/>
         <child link="rear_caster_link"/>
-        <origin xyz="-0.3 0 -0.05" rpy="0 0 0"/>
+        <origin xyz="-0.3 0 -0.175" rpy="0 0 0"/>
     </joint>
 
     <link name="rear_caster_link">
         <visual>
-            <geometry><sphere radius="${wheel_radius}"/></geometry>
+            <geometry><sphere radius="${wheel_radius/1.5}"/></geometry>
             <material name="rubber_black"><color rgba="0.1 0.1 0.1 1"/></material>
         </visual>
         <collision>
-            <geometry><sphere radius="${wheel_radius}"/></geometry>
+            <geometry><sphere radius="${wheel_radius/1.5}"/></geometry>
         </collision>
-        <xacro:sphere_inertia m="0.5" r="${wheel_radius}" o_xyz="0 0 0" o_rpy="0 0 0"/>
+        <xacro:sphere_inertia m="0.5" r="${wheel_radius/1.5}" o_xyz="0 0 0" o_rpy="0 0 0"/>
     </link>
 
 </robot>
