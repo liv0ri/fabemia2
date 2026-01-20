@@ -376,6 +376,9 @@ class CameraFollower(Node):
                     (self.left_line and self.right_line and self.line_found)
                 )
 
+                if intersection_detected==False and self.needToClearIntersection==True:
+                    self.needToClearIntersection = False
+
                 if intersection_detected and not self.all_turns_complete:
                     if self.doing_turn:
                         self.needToClearIntersection = False
