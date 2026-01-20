@@ -43,7 +43,7 @@ class CameraFollower(Node):
         self.target_yaw = 0.0
         self.odom_ready = False
 
-        self.kp = 1.2  
+        self.kp = 0.8
         self.kd = 0.5   
 
         self.line_found = False
@@ -170,6 +170,7 @@ class CameraFollower(Node):
         # --- RESET STATE ---
         self.turn_index = 0
         self.doing_turn = False
+        self.last_line_error = 0
         self.needToClearIntersection = False
         self.all_turns_complete = False
         self.mustIncrementIndex = False
@@ -294,19 +295,13 @@ class CameraFollower(Node):
 
             # Inside the turn completion block
             if abs(error) < 0.05:
-                self.get_logger().info("Turn complete - Re-centering...")
+                self.get_logger().info("Turn complete - Resetting PID")
                 self.doing_turn = False
                 self.turn_index += 1
                 self.needToClearIntersection = True
                 
-                # Reset PID to prevent the "sideways jump"
                 self.line_error = 0.0
-                self.last_line_error = 0.0
-                
-                # Force robot to stay still for a split second to stabilize Odom
-                self.cmd.linear.x = 0.0
-                self.cmd.angular.z = 0.0
-                self.publisher.publish(self.cmd)
+                self.last_line_error = 0.0 
 
             self.cmd.linear.x = 0.0
             self.cmd.angular.z = angular_speed * np.sign(error)
@@ -379,12 +374,13 @@ class CameraFollower(Node):
                 self.cmd.angular.z = max(min(self.cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
                 # Check if turn is complete (within ~3 degrees)
-                if abs(error) < 0.05:
+                if abs(error) < 0.02:
                     self.get_logger().info("DEBUG: STOPPED turning")
                     self.doing_turn = False
+                    self.last_line_error = 0.0
                     self.turn_index += 1
                     self.get_logger().info(f"TURN {self.turn_index}/{len(self.turn_plan)} COMPLETE")
-                    self.needToClearIntersection=True
+                    self.needToClearIntersection = True
                     
                     # Check if all turns are done
                     if self.turn_index >= len(self.turn_plan):
