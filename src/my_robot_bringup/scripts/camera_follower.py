@@ -14,7 +14,7 @@ from config import directions
 import math
 from std_msgs.msg import String
 import json
-import time
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
 # robots states
 class Mode(Enum):
@@ -107,14 +107,18 @@ class CameraFollower(Node):
         # linear.x - forward/backward
         # angular.z - left/right
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 1)
+        
 
+        qos = QoSProfile(depth=1)
+        qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
         # subscribe to which house they need to navigate to
         self.subscription = self.create_subscription(
             String,
             'navigate_to_house',
             self.nav_callback,
-            10
+            qos
         )
+
 
         # Loop every 0.05 seconds
         self.cmd = Twist()
