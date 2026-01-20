@@ -43,6 +43,9 @@ class CameraFollower(Node):
         self.target_yaw = 0.0
         self.odom_ready = False
 
+        self.kp = 1.2  
+        self.kd = 0.5   
+
         self.line_found = False
         # offset from center
         self.line_error = 0.0
@@ -289,8 +292,21 @@ class CameraFollower(Node):
         while rclpy.ok():
             error = self.angle_error(target_yaw, self.current_yaw)
 
+            # Inside the turn completion block
             if abs(error) < 0.05:
-                break
+                self.get_logger().info("Turn complete - Re-centering...")
+                self.doing_turn = False
+                self.turn_index += 1
+                self.needToClearIntersection = True
+                
+                # Reset PID to prevent the "sideways jump"
+                self.line_error = 0.0
+                self.last_line_error = 0.0
+                
+                # Force robot to stay still for a split second to stabilize Odom
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = 0.0
+                self.publisher.publish(self.cmd)
 
             self.cmd.linear.x = 0.0
             self.cmd.angular.z = angular_speed * np.sign(error)
@@ -304,6 +320,13 @@ class CameraFollower(Node):
         self.publisher.publish(self.cmd)
 
         self.get_logger().info("Initial turn complete")
+
+    def calculate_line_following_command(self, base_speed):
+        derivative = self.line_error - self.last_line_error
+        angular = -(self.kp * self.line_error + self.kd * derivative)
+        angular = max(min(angular, 0.7), -0.7)
+        self.last_line_error = self.line_error  # Update AFTER calculation
+        return base_speed, angular
 
 
     def start_turn(self, turn_right, half_turn=False):
@@ -395,10 +418,9 @@ class CameraFollower(Node):
                         )
                         
                         if can_go_straight:
-                            self.cmd.linear.x = 0.22
-                            kp = 0.0025
-                            angular = -kp * self.line_error
-                            self.cmd.angular.z = max(min(angular, 0.6), -0.6)
+                            linear, angular = self.calculate_line_following_command(0.22)
+                            self.cmd.linear.x = linear
+                            self.cmd.angular.z = angular
                             self.mustIncrementIndex = True
                             
                         else:
@@ -411,10 +433,9 @@ class CameraFollower(Node):
             # Normal line following
             if self.line_found and self.doing_turn==False:
                 self.get_logger().info(f"DEBUG: following line turn {self.turn_index}")
-                self.cmd.linear.x = 0.22
-                kp = 0.0025
-                angular = -kp * self.line_error
-                self.cmd.angular.z = max(min(angular, 0.6), -0.6)
+                linear, angular = self.calculate_line_following_command(0.22)
+                self.cmd.linear.x = linear
+                self.cmd.angular.z = angular
 
                 if(self.mustIncrementIndex==True):
                     self.turn_index+=1
@@ -456,11 +477,10 @@ class CameraFollower(Node):
 
         elif self.mode == Mode.VERIFY_HOUSE:
             # Continue following line toward house
+            linear, angular = self.calculate_line_following_command(0.08)
             if self.line_found:
-                self.cmd.linear.x = 0.05
-                kp = 0.0025
-                angular = -kp * self.line_error
-                self.cmd.angular.z = max(min(angular, 0.6), -0.6)
+                self.cmd.linear.x = linear
+                self.cmd.angular.z = angular
 
             # Stop when house is close enough
             if self.house_reached:
