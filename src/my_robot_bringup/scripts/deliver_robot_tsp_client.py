@@ -5,7 +5,7 @@ from std_msgs.msg import String
 from example_interfaces.srv import Trigger
 import json
 import random
-import time
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
 HOUSES = [f'HOUSE_{i}' for i in range(1, 11)]
 
@@ -23,7 +23,9 @@ class DeliverobotTSPClient(Node):
         # Publish targets for getting the optimised path 
         self.publisher = self.create_publisher(String, 'tsp_targets', 10)
         # Publish the house to go to - to camera follower
-        self.nav_publisher = self.create_publisher(String, 'navigate_to_house', 10)
+        qos = QoSProfile(depth=1)
+        qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+        self.nav_publisher = self.create_publisher(String, 'navigate_to_house', qos)
 
         self.targets_sent = False
         self.create_timer(0.5, self.publish_targets_once)
