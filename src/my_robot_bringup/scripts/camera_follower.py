@@ -282,8 +282,17 @@ class CameraFollower(Node):
 
     def calculate_line_following_command(self, base_speed):
         derivative = self.line_error - self.last_line_error
-        angular = -(self.kp * self.line_error + self.kd * derivative)
-        angular = max(min(angular, 0.7), -0.7)
+        #angular = -(self.kp * self.line_error + self.kd * derivative)
+        #angular = max(min(angular, 0.7), -0.7)
+
+        # Add a deadzone: if the error is less than 5%, don't steer hard
+        if abs(self.line_error) < 0.05:
+            angular = 0.0
+        else:
+            angular = -(self.line_error * self.kp + derivative * self.kd)
+        
+        # Limit maximum steering to prevent "weird turns"
+        angular = max(min(angular, 0.5), -0.5)
         self.last_line_error = self.line_error  # Update AFTER calculation
         return base_speed, angular
 
