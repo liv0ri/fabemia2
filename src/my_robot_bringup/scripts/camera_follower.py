@@ -196,10 +196,6 @@ class CameraFollower(Node):
         msg.data = json.dumps({'reached': self.TARGET_HOUSE})
         self.done_pub.publish(msg)
         self.get_logger().info(f"Reached {self.TARGET_HOUSE}")
- 
-    def publish_velocity(self, linear, angular):
-        self.cmd.linear.x = linear
-        self.cmd.angular.z = angular
 
     # Helper function used throughout this class
     def detect_black(self, hsv):
