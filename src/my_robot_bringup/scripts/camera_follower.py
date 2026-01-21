@@ -31,7 +31,7 @@ class CameraFollower(Node):
         self.mode = Mode.FOLLOW_LINE
         self.navigation_active = False
 
-        self.turn_index = 0
+        self.turn_index = 0.0
         self.doing_turn = False
         self.all_turns_complete = False
         self.needToClearIntersection = False
@@ -43,8 +43,7 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.turn_kp = 1.2
-        self.kp = 0.6 #was 0.8
+        self.kp = 1.2 #was 0.8
         self.kd = 0.5   
 
         self.line_found = False
@@ -313,7 +312,7 @@ class CameraFollower(Node):
         # Limit maximum steering to prevent "weird turns"
         angular = max(min(angular, 0.02), -0.02)
         self.last_line_error = self.line_error  # Update AFTER calculation
-        return base_speed, angular
+        return float(base_speed), float(angular)
 
     def calculate_heading_lock_command(self, base_speed):
         # 1. Start with your fixed cardinal target (0, 90, 180, 270)
@@ -325,7 +324,7 @@ class CameraFollower(Node):
             # Adjust the target angle
             # If line_error is positive (line is to the right), we steer right to find it
             line_correction = self.line_error * 0.05 
-            target = self.angle_error(target, line_correction)
+            target = target - line_correction
 
         # 3. Calculate Error: (Nudged Target) - (Current Yaw)
         yaw_error = self.angle_error(target, self.current_yaw)
@@ -337,7 +336,7 @@ class CameraFollower(Node):
         # Clamp it so it doesn't jitter
         angular = max(min(angular, 0.05), -0.05)
         
-        return base_speed, angular
+        return float(base_speed), float(angular)
 
     def start_turn(self, turn_right, half_turn=False):
         self.get_logger().info(f"STARTING TURN {self.turn_index + 1}/{len(self.turn_plan)}: {'RIGHT' if turn_right else 'LEFT'} {'180°' if half_turn else '90°'}")
@@ -345,11 +344,11 @@ class CameraFollower(Node):
         self.get_logger().info(f"actual start_yaw {self.start_yaw}, current_yaw {self.current_yaw}")
 
         if half_turn:
-            self.current_cardinal_target = self.angle_error(self.current_cardinal_target,  -5*math.pi/9)
+            self.current_cardinal_target = self.angle_error(self.current_cardinal_target,  -math.pi/2)
         elif turn_right:
-            self.current_cardinal_target = self.angle_error(self.current_cardinal_target, 5*math.pi/9)
+            self.current_cardinal_target = self.angle_error(self.current_cardinal_target, math.pi/2)
         else:
-            self.current_cardinal_target = self.angle_error(self.current_cardinal_target,  -5*math.pi/9)
+            self.current_cardinal_target = self.angle_error(self.current_cardinal_target,  -math.pi/2)
             
         self.target_yaw = self.current_cardinal_target
         self.get_logger().info(f"Target yaw updated to: {self.target_yaw:.2f}")
@@ -372,7 +371,7 @@ class CameraFollower(Node):
             self.start_turn(self.turn_plan[0] == "right", half_turn=half_turn)
 
         if self.mode == Mode.FOLLOW_LINE:
-            self.get_logger().info(f"Doing turn {self.doing_turn}")
+            self.get_logger().info(f"Doing turn {self.doing_turn} -> ANGULAR {self.cmd.angular.z} LINEAR {self.cmd.linear.x}")
             # Handle active turn
             if self.doing_turn:
                 self.cmd.linear.x = 0.0
@@ -380,7 +379,7 @@ class CameraFollower(Node):
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
                 
-                self.cmd.angular.z = self.turn_kp * error
+                self.cmd.angular.z = self.kp * error
                 
                 # Clamp rotation speed
                 max_rot_speed = 0.1
@@ -395,7 +394,7 @@ class CameraFollower(Node):
                     self.get_logger().info(f"TURN {self.turn_index}/{len(self.turn_plan)} COMPLETE")
                     self.needToClearIntersection = True
                     # IMPO - Set to 0 to try and avoid circular moving
-                    self.cmd.angular.z = 0
+                    self.cmd.angular.z = 0.0
                     
                     # Check if all turns are done
                     if self.turn_index >= len(self.turn_plan):
@@ -433,7 +432,7 @@ class CameraFollower(Node):
                         self.publisher.publish(self.cmd)
 
                 # Use Heading Lock to drive straight instead of sniffing pixels
-                linear, angular = self.calculate_heading_lock_command(0.22)
+                linear, angular = self.calculate_heading_lock_command(0.05)
                 self.cmd.linear.x = linear
                 self.cmd.angular.z = angular
 
