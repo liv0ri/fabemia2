@@ -43,8 +43,9 @@ class CameraFollower(Node):
         self.target_yaw = 0.0
         self.odom_ready = False
 
-        self.kp = 0.5 #was 0.8
-        self.kd = 0.2 #was 0.5   
+        self.turn_kp = 0.6
+        self.kp = 0.6 #was 0.8
+        self.kd = 0.5   
 
         self.line_found = False
         # offset from center
@@ -345,7 +346,7 @@ class CameraFollower(Node):
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
                 
-                self.cmd.angular.z = self.kp * error
+                self.cmd.angular.z = self.turn_kp * error
                 
                 # Clamp rotation speed
                 max_rot_speed = 0.5
