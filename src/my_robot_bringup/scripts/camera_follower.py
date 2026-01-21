@@ -46,6 +46,12 @@ class CameraFollower(Node):
         self.kp = 1.2 #was 0.8
         self.kd = 0.5   
 
+        #dimmy changes on 21/01
+        self.straight_yaw = 0.0
+        self.heading_kp = 3.0
+        self.max_heading_correction = 0.3
+
+
         self.line_found = False
         # offset from center
         self.line_error = 0.0
@@ -163,6 +169,20 @@ class CameraFollower(Node):
         # Send a sign to deliver robot client to see if the robot has arrived to one house 
         # this is done so it can send another house
         self.done_pub = self.create_publisher(String, 'navigation_done', 10)
+    
+    def drive_straight_cmd(self, speed):
+        yaw_error = self.angle_error(self.straight_yaw, self.current_yaw)
+
+        angular = self.heading_kp * yaw_error
+        angular = max(
+            min(angular, self.max_heading_correction),
+            -self.max_heading_correction
+        )
+
+        cmd = Twist()
+        cmd.linear.x = speed
+        cmd.angular.z = angular
+        return cmd
 
     def nav_callback(self, msg):
         data = json.loads(msg.data)
@@ -300,7 +320,7 @@ class CameraFollower(Node):
             math.sin(target - current),
             math.cos(target - current)
         )
-
+    
     def calculate_line_following_command(self, base_speed):
         derivative = self.line_error - self.last_line_error
         #angular = -(self.kp * self.line_error + self.kd * derivative)
@@ -390,6 +410,8 @@ class CameraFollower(Node):
                 if abs(error) < 0.01:
                     self.get_logger().info("DEBUG: STOPPED turning")
                     self.doing_turn = False
+                    self.straight_yaw = self.current_cardinal_target
+
                     self.last_line_error = 0.0
                     self.get_logger().info(f"TURN {self.turn_index}/{len(self.turn_plan)} COMPLETE")
                     self.needToClearIntersection = True
@@ -404,10 +426,12 @@ class CameraFollower(Node):
                 self.publisher.publish(self.cmd)
             # Normal moving forward
             else:
-                # move a bit
-                self.cmd.linear.x = 1.0
-                # No turning
-                self.cmd.angular.z = 0.0
+                # LOCK heading when starting straight motion
+                self.straight_yaw = self.current_cardinal_target
+
+                # Drive straight using odometry ONLY
+                self.cmd = self.drive_straight_cmd(0.35)
+                
                 # Detect intersection and start next turn
                 intersection_detected = (
                     (self.left_line and self.line_found) or
@@ -425,17 +449,17 @@ class CameraFollower(Node):
                     if self.turn_index < len(self.turn_plan):
                         # Start the next turn based on direction plan
                         self.start_turn(self.turn_plan[self.turn_index]=="right")
-                        self.cmd.linear.x = 0.0  
-                        self.turn_index+=1
+                        self.cmd.linear.x = 0.0
                         self.cmd.angular.z = 0.0
-                        
+                        self.turn_index+=1
+
                         self.publisher.publish(self.cmd)
-                elif not self.doing_turn:
+               #elif not self.doing_turn:
                     # Use Heading Lock to drive straight instead of sniffing pixels
                     # passing cmd.angular.x value
-                    linear, angular = self.calculate_heading_lock_command(0.5)
-                    self.cmd.linear.x = linear
-                    self.cmd.angular.z = angular
+                #   linear, angular = self.calculate_heading_lock_command(0.5)
+                #   self.cmd.linear.x = linear
+                #   self.cmd.angular.z = angular
 
             # House detection
             if self.all_turns_complete and self.house_visible:
