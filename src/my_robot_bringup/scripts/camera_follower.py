@@ -457,7 +457,7 @@ class CameraFollower(Node):
                     linear, angular = self.calculate_heading_lock_command(0.5)
                     self.cmd.linear.x = linear
                     #
-                    # self.cmd.angular.z = angular 
+                    self.cmd.angular.z = angular 
                     #if you ignore it, the problem will go away
 
             # House detection
