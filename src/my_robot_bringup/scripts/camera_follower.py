@@ -288,9 +288,9 @@ class CameraFollower(Node):
             # Facing SOUTH (~3.14), adding pi/2 (Left) should result in EAST (~ -1.57)
             self.cardinals = {
                 'SOUTH': self.start_yaw,
-                'WEST':  self.normalize_angle(self.start_yaw - math.pi/2) -0.2, # Right -0.2 to maybe correct 0.2 rad diff
+                'WEST':  self.normalize_angle(self.start_yaw - math.pi/2), # Right -0.2 to maybe correct 0.2 rad diff
                 'NORTH': self.normalize_angle(self.start_yaw + math.pi),    # Behind
-                'EAST':  self.normalize_angle(self.start_yaw + math.pi/2) +0.2 # Left
+                'EAST':  self.normalize_angle(self.start_yaw + math.pi/2)# Left
             }
             self.current_cardinal_target = self.cardinals['SOUTH']
             self.cardinals_initialized = True
@@ -405,11 +405,11 @@ class CameraFollower(Node):
                 self.cmd.angular.z = self.kp * error
                 
                 # Clamp rotation speed
-                max_rot_speed = 0.2 #was 0.1 
+                max_rot_speed = 0.5 #was 0.1 
                 self.cmd.angular.z = max(min(self.cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
                 # Check if turn is complete
-                if abs(error) < 0.1: #was 0.01 
+                if abs(error) < 0.05: #was 0.01 
                     self.get_logger().info("DEBUG: STOPPED turning")
                     self.doing_turn = False
                     self.last_line_error = 0.0
