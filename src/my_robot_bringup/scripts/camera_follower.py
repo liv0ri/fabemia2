@@ -266,24 +266,6 @@ class CameraFollower(Node):
         self.right_line = np.sum(mask > 0) > 500
     
     def front_callback(self, msg):
-        """
-        h, w = msg.height, msg.width
-        img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        look_ahead_row = int(h*0.4)
-
-        _, thresh = cv2.threshold(gray[look_ahead_row,:], 50, 255, cv2.THRESH_BINARY_INV)
-        M = cv2.moments(thresh)
-
-        if M["m00"] > 500:
-            cx = int(M["m10"] / M["m00"])
-            self.line_error = float(cx - (w/2)) / (w/2)
-            self.line_found = True
-        else:
-            self.line_found = False
-        """
-        #=======================================
-        
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -293,9 +275,9 @@ class CameraFollower(Node):
         row_data = gray[scan_row, :]
         _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # 2. Define Custom Segment Boundaries (User Specified)
-        m_start = int( (w/2) - (((1/10) * w) / 2) )
-        m_end = int( (w/2) + (((1/10) * w) / 2) )
+        # 2. Define Custom Segment Boundaries
+        m_start = int((w/2) - ((1/10) * w) / 2)
+        m_end = int((w/2) + ((1/10) * w) / 2)
 
         segments = {
             'LEFT':   thresh[0 : m_start],
@@ -304,69 +286,80 @@ class CameraFollower(Node):
         }
 
         # 3. Check which segments have a line
-        # We need a decent chunk of black pixels to count it as "seen"
         sides = m_start * 1/4
-        middle = (m_end-m_start) * 3/4
+        middle = (m_end - m_start) * 3/4
         segment_density = {
             'LEFT':   np.sum(segments['LEFT'] == 255) > sides,
             'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle,
             'RIGHT':  np.sum(segments['RIGHT'] == 255) > sides
         }
 
+        # Update intersection detection flags FIRST
+        self.left_line = segment_density['LEFT']
+        self.right_line = segment_density['RIGHT']
+
         target_cx = None
 
-        # 4. "Winner Takes All" Logic
-        target_cx = None
-        
+        # 4. FIXED: Prioritize MIDDLE strongly when it exists
+        # Only look at sides if middle is completely gone
         if segment_density['MIDDLE']:
             M = cv2.moments(segments['MIDDLE'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_start
-            self.get_logger().info("middle found and following")
+            self.line_found = True
         
+        # Only check sides if MIDDLE is NOT found
+        elif segment_density['LEFT'] and segment_density['RIGHT']:
+            # Both sides visible - likely at intersection, use weighted average
+            M_left = cv2.moments(segments['LEFT'])
+            M_right = cv2.moments(segments['RIGHT'])
+            
+            if M_left["m00"] > 0 and M_right["m00"] > 0:
+                cx_left = M_left["m10"] / M_left["m00"]
+                cx_right = (M_right["m10"] / M_right["m00"]) + m_end
+                # Average the two to stay centered
+                target_cx = (cx_left + cx_right) / 2.0
+            self.line_found = True
+            
         elif segment_density['LEFT']:
             M = cv2.moments(segments['LEFT'])
             if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) # No offset
-            self.get_logger().info("NO MIDDLE FOUND. FOUND LEFT")
+                target_cx = M["m10"] / M["m00"]
+            self.line_found = True
         
         elif segment_density['RIGHT']:
             M = cv2.moments(segments['RIGHT'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_end
-            self.get_logger().info("NO MIDDLE FOUND. FOUND RIGHT")
-
-        # 5. Single Unified Error Update
-        if target_cx is not None:
-            
-            # Calculate normalized error once
-            new_error = float(target_cx - (w / 2)) / (w / 2)
-
-            min_force = 0.3
-
-            if new_error >0:
-                self.line_error = max(new_error, min_force)
-            else:
-                self.line_error = max(new_error, -min_force)
-
             self.line_found = True
         else:
             self.line_found = False
 
+        # 5. Calculate error
+        if target_cx is not None:
+            new_error = float(target_cx - (w / 2)) / (w / 2)
+            
+            # Apply minimum force threshold
+            min_force = 0.3
+            if new_error > 0:
+                self.line_error = max(new_error, min_force)
+            else:
+                self.line_error = min(new_error, -min_force)
+            
+            self.line_found = True
+        else:
+            self.line_found = False
 
-        #as it was before for house detection
+        # House detection logic (unchanged)
         if self.all_turns_complete:   
-            h, w = msg.height, msg.width
-            img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
             center = mask[:, w//2 - 80:w//2 + 80]
-            # Is the house detectable
             self.house_visible = np.sum(mask > 0) > 1200
             self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
 
     def normalize_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
