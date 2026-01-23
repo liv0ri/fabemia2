@@ -54,6 +54,7 @@ class CameraFollower(Node):
         self.sum_line_error = 0.0
         self.left_line = False
         self.right_line = False
+        self.already_failed = False
 
         self.house_visible = False
         self.house_reached = False
@@ -304,11 +305,12 @@ class CameraFollower(Node):
 
         # 3. Check which segments have a line
         # We need a decent chunk of black pixels to count it as "seen"
-        chunk = 5
+        sides = m_start * 1/4
+        middle = (m_end-m_start) * 3/4
         segment_density = {
-            'LEFT':   np.sum(segments['LEFT'] == 255) > chunk,
-            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > chunk,
-            'RIGHT':  np.sum(segments['RIGHT'] == 255) > chunk
+            'LEFT':   np.sum(segments['LEFT'] == 255) > sides,
+            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle,
+            'RIGHT':  np.sum(segments['RIGHT'] == 255) > sides
         }
 
         target_cx = None
@@ -320,28 +322,26 @@ class CameraFollower(Node):
             M = cv2.moments(segments['MIDDLE'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_start
+            self.get_logger().info("middle found and following")
         
         elif segment_density['LEFT']:
             M = cv2.moments(segments['LEFT'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) # No offset
+            self.get_logger().info("NO MIDDLE FOUND. FOUND LEFT")
         
         elif segment_density['RIGHT']:
             M = cv2.moments(segments['RIGHT'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_end
+            self.get_logger().info("NO MIDDLE FOUND. FOUND RIGHT")
 
         # 5. Single Unified Error Update
         if target_cx is not None:
+            
             # Calculate normalized error once
             new_error = float(target_cx - (w / 2)) / (w / 2)
-            
-            # Apply the "Middle Boost" consistently
-            if segment_density['MIDDLE']:
-                self.line_error = new_error * 1.5
-            else:
-                self.line_error = new_error * 1.5
-                
+            self.line_error = new_error 
             self.line_found = True
         else:
             self.line_found = False
@@ -376,7 +376,7 @@ class CameraFollower(Node):
             self.start_yaw = self.current_yaw 
             # Facing SOUTH (~3.14), adding pi/2 (Left) should result in EAST (~ -1.57)
             self.cardinals = {
-                'SOUTH': self.start_yaw,
+                'SOUTH': self.normalize_angle(self.start_yaw),
                 'WEST':  self.normalize_angle(self.start_yaw - math.pi/2 ) , # Right -0.2 to maybe correct 0.2 rad diff
                 'NORTH': self.normalize_angle(self.start_yaw + math.pi),    # Behind
                 'EAST':  self.normalize_angle(self.start_yaw + math.pi/2 )  # Left
@@ -612,15 +612,24 @@ class CameraFollower(Node):
                         linear, angular = self.calculate_line_following_command(0.1)
                         self.cmd.linear.x = linear
                         self.cmd.angular.z = angular
+                        self.already_failed = False
                     else:
                         self.sum_line_error = 0.0
                         self.cmd.linear.x = 0.0
                         # Spin in the direction of the last known error to find it again!
                         # If error was positive (Line on Right), spin Right (Negative Z)
-                        if self.last_line_error > 0:
-                            self.cmd.angular.z = -0.3 # Turn Right
+                        if(self.already_failed):
+                            if self.last_line_error > 0:
+                                self.cmd.angular.z = -0.6 # Turn Right
+                            else:
+                                self.cmd.angular.z = 0.6  # Turn Left
                         else:
-                            self.cmd.angular.z = 0.3  # Turn Left
+                            if self.last_line_error > 0:
+                                self.cmd.angular.z = -0.3 # Turn Right
+                            else:
+                                self.cmd.angular.z = 0.3  # Turn Left
+
+                            self.already_failed = True
                         self.get_logger().info("Lost line... Recovering")
                 
 
