@@ -43,7 +43,7 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 1.2 #was 0.8
+        self.kp = 0.8
         self.kd = 0.5   
 
         self.line_found = False
@@ -310,7 +310,7 @@ class CameraFollower(Node):
         
         # IMPORTANT: Increase your clamps. 0.02 is too small to overcome friction.
         # 0.4 to 0.6 is a safer range for actual movement.
-        angular = max(min(angular, 0.4), -0.4)
+        angular = max(min(angular, 0.03), -0.03)
         
         self.last_line_error = self.line_error
         return float(base_speed), float(angular)
@@ -327,11 +327,11 @@ class CameraFollower(Node):
         yaw_error = self.angle_error(target, self.current_yaw)
         
         # 4. Apply P-Controller
-        heading_kp = 1.5 
+        heading_kp = 0.8
         angular = heading_kp * yaw_error
         
         # Clamp it so it doesn't jitter
-        angular = max(min(angular, 0.05), -0.05)
+        angular = max(min(angular, 0.03), -0.03)
         
         return float(base_speed), float(angular)
 
@@ -404,12 +404,20 @@ class CameraFollower(Node):
                 
                 self.cmd.angular.z = self.kp * error
                 
-                # Clamp rotation speed
-                max_rot_speed = 0.5 #was 0.1 
+                
+                #for last 17 degrees -> 0.29 ~= 0.3; decrease rotation speed.
+                if(error <= 0.3):
+                    max_rot_speed = min (1.0, abs(error)/0.3)
+                else:
+                    # Clamp rotation speed
+                    max_rot_speed = 0.3 #was 0.1 -> 0.5 -> 0.3 
+
                 self.cmd.angular.z = max(min(self.cmd.angular.z, max_rot_speed), -max_rot_speed)
                 
+
+
                 # Check if turn is complete
-                if abs(error) < 0.05: #was 0.01 
+                if abs(error) < 0.01:
                     self.get_logger().info("DEBUG: STOPPED turning")
                     self.doing_turn = False
                     self.last_line_error = 0.0
@@ -420,7 +428,7 @@ class CameraFollower(Node):
                     self.cmd.angular.z = 0.0
                     self.cmd.linear.x = 0.0
 
-                    #WE NEED SETTLING TIME.
+                    
                     
                     # Check if all turns are done
                     if self.turn_index >= len(self.turn_plan):
