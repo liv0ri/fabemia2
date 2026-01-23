@@ -321,6 +321,8 @@ class CameraFollower(Node):
             if M["m00"] > 0:
                 local_cx = M["m10"] / M["m00"]
                 target_cx = local_cx + m_start
+                raw_error = float(target_cx - (w/2)) / (w/2)
+                self.line_error = raw_error * 1.5
 
         # PRIORITY 2: If Middle is empty, check sides (Recovery Mode)
         # Only check these if we DON'T see the middle, so we don't get distracted by forks.
