@@ -80,7 +80,7 @@ class CameraFollower(Node):
             1
         )
 
-        """
+        #"""
 
         # Bottom-middle - main line following
         self.bm_sub = self.create_subscription(
@@ -106,7 +106,7 @@ class CameraFollower(Node):
             10
         )
 
-        """
+        #"""
 
         # Odometry subscriber
         self.odom_sub = self.create_subscription(
@@ -270,91 +270,41 @@ class CameraFollower(Node):
         self.right_line = np.sum(mask > 0) > 500
     
     def front_callback(self, msg):
+
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
-        # 1. Scan the bottom area
-        scan_row = int(h * 0.9)
-        row_data = gray[scan_row, :]
+        # Look at the middle-bottom portion of the image
+        look_ahead_row = int(h * 0.7)
+        row_data = gray[look_ahead_row, :]
         _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
-
-        # 2. Define Custom Segment Boundaries
-        m_start = int((w/2) - ((1/10) * w) / 2)
-        m_end = int((w/2) + ((1/10) * w) / 2)
-
-        segments = {
-            'LEFT':   thresh[0 : m_start],
-            'MIDDLE': thresh[m_start : m_end],
-            'RIGHT':  thresh[m_end : w]
-        }
-
-        # 3. Check which segments have a line
-        sides = m_start * 1/4
-        middle = (m_end - m_start) * 3/4
-        segment_density = {
-            'LEFT':   np.sum(segments['LEFT'] == 255) > sides,
-            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle,
-            'RIGHT':  np.sum(segments['RIGHT'] == 255) > sides
-        }
-
-        # Update intersection detection flags FIRST
-        self.f_left_line = segment_density['LEFT']
-        self.f_right_line = segment_density['RIGHT']
-
-        target_cx = None
-
-        # 4. FIXED: Prioritize MIDDLE strongly when it exists
-        # Only look at sides if middle is completely gone
-        if segment_density['MIDDLE']:
-            M = cv2.moments(segments['MIDDLE'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_start
-            self.f_line_found = True
         
-        # Only check sides if MIDDLE is NOT found
-        elif segment_density['LEFT'] and segment_density['RIGHT']:
-            # Both sides visible - likely at intersection, use weighted average
-            M_left = cv2.moments(segments['LEFT'])
-            M_right = cv2.moments(segments['RIGHT'])
-            
-            if M_left["m00"] > 0 and M_right["m00"] > 0:
-                cx_left = M_left["m10"] / M_left["m00"]
-                cx_right = (M_right["m10"] / M_right["m00"]) + m_end
-                # Average the two to stay centered
-                target_cx = (cx_left + cx_right) / 2.0
-            self.f_line_found = True
-            
-        elif segment_density['LEFT']:
-            M = cv2.moments(segments['LEFT'])
-            if M["m00"] > 0:
-                target_cx = M["m10"] / M["m00"]
-            self.f_line_found = True
+        # Only look at the CENTER region - ignore sides completely
+        center_width = int(w * 0.3)  # Use center 30% of image
+        center_start = int(w * 0.35)
+        center_end = int(w * 0.65)
         
-        elif segment_density['RIGHT']:
-            M = cv2.moments(segments['RIGHT'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_end
-            self.f_line_found = True
-        else:
-            self.f_line_found = False
-
-        # 5. Calculate error
-        if target_cx is not None:
-            new_error = float(target_cx - (w / 2)) / (w / 2)
+        center_segment = thresh[center_start:center_end]
+        
+        # Calculate center of mass in the center region
+        M = cv2.moments(center_segment)
+        
+        if M["m00"] > 100:  # Enough pixels to be confident
+            # Calculate position relative to center segment
+            cx_in_segment = M["m10"] / M["m00"]
+            # Convert to full image coordinates
+            cx = cx_in_segment + center_start
             
-            # Apply minimum force threshold
-            min_force = 0.3
-            if new_error > 0:
-                self.line_error = max(new_error, min_force)
-            else:
-                self.line_error = min(new_error, -min_force)
+            # Calculate normalized error
+            new_error = float(cx - (w / 2)) / (w / 2)
             
-            self.f_line_found = True
+            self.line_error = new_error
+            self.line_found = True
         else:
-            self.f_line_found = False
+            self.line_found = False
 
-        # House detection logic (unchanged)
+        # House detection logic
         if self.all_turns_complete:   
             hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
@@ -398,31 +348,28 @@ class CameraFollower(Node):
 
     
     def calculate_line_following_command(self, base_speed):
-        # 1. Update the Integral (Sum of errors)
+
+        # Update the Integral
         self.sum_line_error += self.line_error
         
-        # 2. Anti-Windup: Limit the memory so it doesn't go crazy
-        # This prevents the "I" term from overpowering everything else
-        max_integral = 5.0
+        # Anti-Windup
+        max_integral = 3.0
         self.sum_line_error = max(min(self.sum_line_error, max_integral), -max_integral)
         
-        if(self.f_left_line or self.f_right_line):
-            kp = self.kp *0.7
-            kd = self.kd *0.7
-        else:
-            kp = self.kp
-            kd = self.kd
-
-        # 3. Calculate terms
+        # PID gains
+        kp = self.kp
+        ki = self.ki
+        kd = self.kd
+        
+        # Calculate terms
         P = self.line_error * kp
-        I = self.sum_line_error * self.ki
+        I = self.sum_line_error * ki
         D = (self.line_error - self.last_line_error) * kd
         
-        # 4. Combine (Negative sign for direction correction)
+        # Combine
         angular = -(P + I + D)
         
-        # 5. Reset memory if we cross zero (Optional but helpful)
-        # If we crossed the center line, we don't need to 'remember' the old bias anymore
+        # Reset integral on zero crossing
         if (self.line_error > 0 and self.last_line_error < 0) or \
         (self.line_error < 0 and self.last_line_error > 0):
             self.sum_line_error = 0.0
@@ -430,9 +377,7 @@ class CameraFollower(Node):
         self.last_line_error = self.line_error
         
         # Cap the output
-        angular = max(min(angular, 0.6), -0.6)
-
-        
+        angular = max(min(angular, 0.8), -0.8)
         
         return base_speed, angular
     
