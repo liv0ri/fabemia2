@@ -479,29 +479,27 @@ class CameraFollower(Node):
                     (self.left_line or self.right_line)
                 )
 
-                # Clear intersection flag when we've passed it
-                if not intersection_detected and self.needToClearIntersection:
-                    self.needToClearIntersection = False
-                    self.get_logger().info("Intersection cleared")
-
                 # Detect intersection and execute turn
                 if intersection_detected and not self.all_turns_complete and not self.needToClearIntersection:
-                    side = "LEFT" if self.left_line else ("RIGHT" if self.right_line else "BOTH")
-                    self.get_logger().info(f"INTERSECTION DETECTED - Side line: {side}")
                     
                     self.needToClearIntersection = True
+
+                    # Stop completely before turning
+                    self.cmd.linear.x = 0.0
+                    self.cmd.angular.z = 0.0
+                    self.publisher.publish(self.cmd)
                     
-                    if self.turn_index < len(self.turn_plan):
-                        # Stop completely before turning
-                        self.cmd.linear.x = 0.0
-                        self.cmd.angular.z = 0.0
-                        self.publisher.publish(self.cmd)
-                        
-                        # Initiate turn
-                        turn_direction = "RIGHT" if self.turn_plan[self.turn_index] == "right" else "LEFT"
-                        self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
-                        self.start_turn(self.turn_plan[self.turn_index] == "right")
+                    # Initiate turn
+                    turn_direction = "RIGHT" if self.turn_plan[self.turn_index] == "right" else "LEFT"
+                    self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
+
+                    #Go straight at intersection Logic
+                    if(self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
+                        self.start_turn(self.turn_plan[self.turn_index])
                         return
+                    
+                    #otherwise go onto line following vvv
+                    
 
                 # Normal line following
                 if self.line_found:
@@ -509,6 +507,11 @@ class CameraFollower(Node):
                     self.cmd.linear.x = linear
                     self.cmd.angular.z = angular
                     self.already_failed = False
+
+                    # Clear intersection flag when we've passed it
+                    if not intersection_detected and self.needToClearIntersection:
+                        self.needToClearIntersection = False
+                        self.get_logger().info("Intersection cleared")
                     
                 else:
                     # Lost line - recovery mode
