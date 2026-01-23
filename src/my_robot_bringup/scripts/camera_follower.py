@@ -452,13 +452,16 @@ class CameraFollower(Node):
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
                 
-                self.cmd.angular.z = self.kp * error
+                ANGULAR = self.kp * error
+                #max_rot_speed = 0.3 #was 0.1 -> 0.5 -> 0.3 
+                #ANGULAR = max(min(ANGULAR, max_rot_speed), -max_rot_speed)
                 
-                
-                max_rot_speed = 0.3 #was 0.1 -> 0.5 -> 0.3 
-
-                self.cmd.angular.z = max(min(self.cmd.angular.z, max_rot_speed), -max_rot_speed)
-                
+                #dont let it  be too small otherwise it's not gonna manage to have enough power to turn
+                #self.get_logger().info(f"ANGULAR: {ANGULAR}")
+                if ANGULAR > 0:
+                    self.cmd.angular.z = max(ANGULAR, 0.1)
+                else:
+                    self.cmd.angular.z = min(ANGULAR, -0.1)
 
 
                 # Check if turn is complete
