@@ -270,35 +270,78 @@ class CameraFollower(Node):
         self.right_line = np.sum(mask > 0) > 500
     
     def front_callback(self, msg):
-
+        """
+        Front camera - for line following.
+        Uses segmented approach but prioritizes MIDDLE strongly.
+        """
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
-        # Look at the middle-bottom portion of the image
-        look_ahead_row = int(h * 0.7)
-        row_data = gray[look_ahead_row, :]
+        # Scan the bottom area for line following
+        scan_row = int(h * 0.9)
+        row_data = gray[scan_row, :]
         _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
+
+        # Define Custom Segment Boundaries - wider middle to be more forgiving
+        m_start = int((w/2) - ((1/4) * w) / 2)  # Middle is 25% of width
+        m_end = int((w/2) + ((1/4) * w) / 2)
+
+        segments = {
+            'LEFT':   thresh[0 : m_start],
+            'MIDDLE': thresh[m_start : m_end],
+            'RIGHT':  thresh[m_end : w]
+        }
+
+        # Check which segments have a line
+        left_threshold = m_start * 0.15
+        middle_threshold = (m_end - m_start) * 0.5
+        right_threshold = (w - m_end) * 0.15
+
+        segment_density = {
+            'LEFT':   np.sum(segments['LEFT'] == 255) > left_threshold,
+            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle_threshold,
+            'RIGHT':  np.sum(segments['RIGHT'] == 255) > right_threshold
+        }
+
+        target_cx = None
+
+        # Strongly prioritize MIDDLE - only use sides if middle completely gone
+        if segment_density['MIDDLE']:
+            M = cv2.moments(segments['MIDDLE'])
+            if M["m00"] > 0:
+                target_cx = (M["m10"] / M["m00"]) + m_start
+            self.line_found = True
         
-        # Only look at the CENTER region - ignore sides completely
-        center_width = int(w * 0.3)  # Use center 30% of image
-        center_start = int(w * 0.35)
-        center_end = int(w * 0.65)
-        
-        center_segment = thresh[center_start:center_end]
-        
-        # Calculate center of mass in the center region
-        M = cv2.moments(center_segment)
-        
-        if M["m00"] > 100:  # Enough pixels to be confident
-            # Calculate position relative to center segment
-            cx_in_segment = M["m10"] / M["m00"]
-            # Convert to full image coordinates
-            cx = cx_in_segment + center_start
+        # Only if middle not found, check both sides (likely at intersection)
+        elif segment_density['LEFT'] and segment_density['RIGHT']:
+            M_left = cv2.moments(segments['LEFT'])
+            M_right = cv2.moments(segments['RIGHT'])
             
-            # Calculate normalized error
-            new_error = float(cx - (w / 2)) / (w / 2)
-            
+            if M_left["m00"] > 0 and M_right["m00"] > 0:
+                cx_left = M_left["m10"] / M_left["m00"]
+                cx_right = (M_right["m10"] / M_right["m00"]) + m_end
+                # Average to stay centered
+                target_cx = (cx_left + cx_right) / 2.0
+            self.line_found = True
+                
+        elif segment_density['LEFT']:
+            M = cv2.moments(segments['LEFT'])
+            if M["m00"] > 0:
+                target_cx = M["m10"] / M["m00"]
+            self.line_found = True
+        
+        elif segment_density['RIGHT']:
+            M = cv2.moments(segments['RIGHT'])
+            if M["m00"] > 0:
+                target_cx = (M["m10"] / M["m00"]) + m_end
+            self.line_found = True
+        else:
+            self.line_found = False
+
+        # Calculate error
+        if target_cx is not None:
+            new_error = float(target_cx - (w / 2)) / (w / 2)
             self.line_error = new_error
             self.line_found = True
         else:
@@ -313,6 +356,7 @@ class CameraFollower(Node):
             center = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible = np.sum(mask > 0) > 1200
             self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
 
 
     def normalize_angle(self, angle):
