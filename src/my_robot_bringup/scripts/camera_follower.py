@@ -57,8 +57,7 @@ class CameraFollower(Node):
         self.already_failed = False
 
         self.f_line_found = False
-        self.f_left_line = False
-        self.f_right_line = False
+
 
         self.house_visible = False
         self.house_reached = False
@@ -241,12 +240,7 @@ class CameraFollower(Node):
         # calculates center of black line in ROI Region of Interest
         M = cv2.moments(mask)
         if M["m00"] > 800:
-            # computer error from center to steer
-            cx = int(M["m10"] / M["m00"])
             self.line_found = True
-            # Now normalized to [-1, 1] range
-            #self.line_error = float(cx - (w / 2)) / (w / 2)
-            #self.last_line_error = self.line_error
         else:
             self.line_found = False
     
@@ -306,7 +300,7 @@ class CameraFollower(Node):
             M = cv2.moments(segments['MIDDLE'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_start
-            self.line_found = True
+            self.f_line_found = True
         
         # Only check sides if MIDDLE is NOT found
         elif segment_density['LEFT'] and segment_density['RIGHT']:
@@ -319,21 +313,21 @@ class CameraFollower(Node):
                 cx_right = (M_right["m10"] / M_right["m00"]) + m_end
                 # Average the two to stay centered
                 target_cx = (cx_left + cx_right) / 2.0
-            self.line_found = True
+            self.f_line_found = True
             
         elif segment_density['LEFT']:
             M = cv2.moments(segments['LEFT'])
             if M["m00"] > 0:
                 target_cx = M["m10"] / M["m00"]
-            self.line_found = True
+            self.f_line_found = True
         
         elif segment_density['RIGHT']:
             M = cv2.moments(segments['RIGHT'])
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_end
-            self.line_found = True
+            self.f_line_found = True
         else:
-            self.line_found = False
+            self.f_line_found = False
 
         # 5. Calculate error
         if target_cx is not None:
@@ -346,9 +340,9 @@ class CameraFollower(Node):
             else:
                 self.line_error = min(new_error, -min_force)
             
-            self.line_found = True
+            self.f_line_found = True
         else:
-            self.line_found = False
+            self.f_line_found = False
 
         # House detection logic
         if self.all_turns_complete:   
@@ -550,7 +544,7 @@ class CameraFollower(Node):
                     
 
                 # Normal line following
-                if self.line_found:
+                if self.f_line_found:
                     linear, angular = self.calculate_line_following_command(0.15)
                     self.cmd.linear.x = linear
                     self.cmd.angular.z = angular
@@ -578,7 +572,7 @@ class CameraFollower(Node):
                     else:
                         self.cmd.angular.z = spin_speed   # Turn left
                         
-                    self.get_logger().info("Line lost - recovering...")
+                    self.get_logger().debug("Line lost - recovering...")
 
             # House detection
             if self.all_turns_complete and self.house_visible:
@@ -591,7 +585,7 @@ class CameraFollower(Node):
 
         elif self.mode == Mode.VERIFY_HOUSE:
             # Approach house slowly
-            if self.line_found:
+            if self.f_line_found:
                 linear, angular = self.calculate_line_following_command(0.08)
                 self.cmd.linear.x = linear
                 self.cmd.angular.z = angular
