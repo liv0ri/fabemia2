@@ -280,35 +280,50 @@ class CameraFollower(Node):
             self.line_found = False
         """
         #=======================================
+        
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
-        # 1. Look at the very bottom to avoid seeing distant intersections
-        scan_row = int(h * 0.9) 
-        
-        # 2. Define 3 "Sensors" (thresholding specific pixels)
-        # We check if pixel value is < 50 (Black line)
-        left_sen   = True if gray[scan_row, int(w * 0.3)] < 50 else False
-        center_sen = True if gray[scan_row, int(w * 0.5)] < 50 else False
-        right_sen  = True if gray[scan_row, int(w * 0.7)] < 50 else False
+        # 1. Scan the very bottom to avoid distant intersections
+        scan_row = int(h * 0.9)
+        row_data = gray[scan_row, :]
+        _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # 3. Intersection Protection
-        # If all three are 1, we are hitting a cross-line. IGNORE IT.
-        if left_sen and center_sen and right_sen:
-            self.get_logger().info("INTERSECTION DETECTED - Ignoring")
-            return # Don't update error, keep driving straight
+        # 2. Define the three segments (Left, Middle, Right)
+        # Adjust these ranges if your robot is very wide
+        segments = {
+            'LEFT':   thresh[0 : int(w*0.33)],
+            'MIDDLE': thresh[int(w*0.33) : int(w*0.66)],
+            'RIGHT':  thresh[int(w*0.66) : w]
+        }
 
-        # 4. Simple Error Assignment (Just like your old hardware)
-        if center_sen:
-            self.line_error = 0.0
-        elif left_sen:
-            self.line_error = -0.8 # Line is on the left
-        elif right_sen:
-            self.line_error = 0.8  # Line is on the right
-        
-        self.line_found = True if (left_sen or center_sen or right_sen) else False
+        # 3. Check density and calculate local moments
+        active_segments = []
+        for name, data in segments.items():
+            if np.sum(data == 255) > 20:  # Threshold for "I see a line here"
+                M = cv2.moments(data)
+                if M["m00"] > 0:
+                    # Calculate local center and offset it back to global image coordinates
+                    local_cx = M["m10"] / M["m00"]
+                    if name == 'LEFT':   global_cx = local_cx
+                    if name == 'MIDDLE': global_cx = local_cx + (w * 0.33)
+                    if name == 'RIGHT':  global_cx = local_cx + (w * 0.66)
+                    active_segments.append(global_cx)
 
+        # 4. Logical Decision
+        # If all segments see black, it's an intersection! Ignore it.
+        if len(active_segments) >= 3:
+            self.get_logger().info("INTERSECTION - Holding steady")
+            return 
+
+        if len(active_segments) > 0:
+            # The best of both worlds: Average the centers of only the valid segments
+            target_cx = sum(active_segments) / len(active_segments)
+            self.line_error = float(target_cx - (w / 2)) / (w / 2)
+            self.line_found = True
+        else:
+            self.line_found = False
         #as it was before for house detection
         if self.all_turns_complete:   
             h, w = msg.height, msg.width
