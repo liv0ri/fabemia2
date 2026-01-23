@@ -305,9 +305,9 @@ class CameraFollower(Node):
         # 3. Check which segments have a line
         # We need a decent chunk of black pixels to count it as "seen"
         segment_density = {
-            'LEFT':   np.sum(segments['LEFT'] == 255) > (1/5 * w / 4),
-            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > (1/5 * w / 4),
-            'RIGHT':  np.sum(segments['RIGHT'] == 255) > (1/5 * w / 4)
+            'LEFT':   np.sum(segments['LEFT'] == 255) > 15,
+            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > 15,
+            'RIGHT':  np.sum(segments['RIGHT'] == 255) > 15
         }
 
         target_cx = None
@@ -612,9 +612,15 @@ class CameraFollower(Node):
                         self.cmd.linear.x = linear
                         self.cmd.angular.z = angular
                     else:
-                        self.cmd.linear.x = 0
-                        self.cmd.angular.z = 0.2
-                        self.get_logger().info("Lost line...")
+                        self.sum_line_error = 0.0
+                        self.cmd.linear.x = 0.0
+                        # Spin in the direction of the last known error to find it again!
+                        # If error was positive (Line on Right), spin Right (Negative Z)
+                        if self.last_line_error > 0:
+                            self.cmd.angular.z = -0.3 # Turn Right
+                        else:
+                            self.cmd.angular.z = 0.3  # Turn Left
+                        self.get_logger().info("Lost line... Recovering")
                 
 
             # House detection
