@@ -70,8 +70,10 @@ class CameraFollower(Node):
             Image,
             '/front_camera/image_raw',
             self.front_callback,
-            10
+            1
         )
+
+        """
 
         # Bottom-middle - main line following
         self.bm_sub = self.create_subscription(
@@ -96,6 +98,8 @@ class CameraFollower(Node):
             self.br_callback,
             10
         )
+
+        """
 
         # Odometry subscriber
         self.odom_sub = self.create_subscription(
@@ -217,6 +221,7 @@ class CameraFollower(Node):
         upper_black = np.array([180, 255, 60])
         return cv2.inRange(hsv, lower_black, upper_black)
 
+    """
     def bm_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
@@ -256,24 +261,41 @@ class CameraFollower(Node):
 
         mask = self.detect_black(hsv)
         self.right_line = np.sum(mask > 0) > 500
-
+    """
     def front_callback(self, msg):
         # Only process front camera after all turns are complete
-        if not self.all_turns_complete:
-            return
-            
+        #if not self.all_turns_complete:
+        #    return
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
-        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        gray = cv2. cvtColor(img, cv2.COLOR_RGB2GRAY)
+        
+        look_ahead_row = int(h*0.4)
 
-        mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+        _, thresh = cv2.threshold(gray[look_ahead_row,:], 50, 255, cv2.THRESH_BINARY_INV)
+        M = cv2.moments(thresh)
 
-        center = mask[:, w//2 - 80:w//2 + 80]
-        # Is the house detectable
-        self.house_visible = np.sum(mask > 0) > 1200
-        self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
-    
+        if M["m00"] > 500:
+            cx = int(M["m10"] / M["m00"])
+            self.line_error = float(cx - (w/2)) / (w/2)
+            self.line_found = True
+        else:
+            self.line_found = False
+
+        #as it was before for house detection
+        if self.all_turns_complete:   
+            h, w = msg.height, msg.width
+            img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+            mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+
+            center = mask[:, w//2 - 80:w//2 + 80]
+            # Is the house detectable
+            self.house_visible = np.sum(mask > 0) > 1200
+            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
     def normalize_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
 
@@ -305,6 +327,7 @@ class CameraFollower(Node):
             math.cos(target - current)
         )
 
+    """
     #this is onlybeing used when verifying house.
     def calculate_line_following_command(self, base_speed):
         derivative = self.line_error - self.last_line_error
@@ -316,6 +339,20 @@ class CameraFollower(Node):
         
         self.last_line_error = self.line_error
         return float(base_speed), float(angular)
+    """
+
+    def calculate_line_following_command(self, base_speed):
+        kp = 0.5
+        kd = 0.3
+
+        proportional = self.line_error
+        derivative = self.line_error - self.last_line_error
+
+        angular = - (proportional * kp + derivative * kd)
+
+        angular = max(min(angular, 0.7), -0.7)
+        self.last_line_error = self.line_error
+        return base_speed, angular
     
     def calculate_heading_lock_command(self, base_speed):
         target = self.current_cardinal_target
@@ -449,7 +486,16 @@ class CameraFollower(Node):
                 self.publisher.publish(self.cmd)
             # Normal moving forward
             else:
-                
+                if self.line_found:
+                    linear, angular = self.calculate_line_following_command(0.1)
+                    self.cmd.linear.x = linear
+                    self.cmd.angular.z = angular
+                else:
+                    self.cmd.linear.x = 0.05
+                    self.cmd.angular.z = 0.0
+                    self.get_logger().info("Lost line...")
+
+                """
                 # Detect intersection and start next turn
                 intersection_detected = (
                     (self.left_line and self.line_found) or
@@ -470,7 +516,9 @@ class CameraFollower(Node):
                         self.start_turn(self.turn_plan[self.turn_index]=="right")
                         self.publisher.publish(self.cmd)
 
-                elif not self.doing_turn:
+                el
+                
+                if not self.doing_turn:
                     # Use Heading Lock to drive straight instead of sniffing pixels
                     # passing cmd.angular.x value
                     linear, angular = self.calculate_heading_lock_command(0.5)
@@ -478,6 +526,7 @@ class CameraFollower(Node):
                     #
                     self.cmd.angular.z = angular 
                     #if you ignore it, the problem will go away
+                """
 
             # House detection
             if self.all_turns_complete and self.house_visible:
