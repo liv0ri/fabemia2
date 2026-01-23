@@ -285,18 +285,21 @@ class CameraFollower(Node):
         self.current_yaw = math.atan2(siny_cosp, cosy_cosp)
     
         if not self.cardinals_initialized:
-            self.get_logger().info("Initialised cardinals")
             self.start_yaw = self.current_yaw 
+            self.get_logger().info(f"Initialised cardinals where start_yaw is {self.start_yaw}")
             # Facing SOUTH (~3.14), adding pi/2 (Left) should result in EAST (~ -1.57)
             self.cardinals = {
-                'SOUTH': self.start_yaw,
+                'SOUTH': self.normalize_angle(self.start_yaw),
                 'WEST':  self.normalize_angle(self.start_yaw - math.pi/2), # Right -0.2 to maybe correct 0.2 rad diff
                 'NORTH': self.normalize_angle(self.start_yaw + math.pi),    # Behind
                 'EAST':  self.normalize_angle(self.start_yaw + math.pi/2)# Left
             }
             self.current_cardinal_target = self.cardinals['SOUTH']
             self.cardinals_initialized = True
-
+            self.get_logger().info(f"SOUTH: {self.cardinals["SOUTH"]}")
+            self.get_logger().info(f"WEST: {self.cardinals["WEST"]}")
+            self.get_logger().info(f"NORTH: {self.cardinals["NORTH"]}")
+            self.get_logger().info(f"EAST: {self.cardinals["EAST"]}")
         self.odom_ready = True
     
     def angle_error(self, target, current):
