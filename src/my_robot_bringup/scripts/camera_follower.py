@@ -270,82 +270,56 @@ class CameraFollower(Node):
         self.right_line = np.sum(mask > 0) > 500
     
     def front_callback(self, msg):
-        """
-        Front camera - for line following.
-        Uses segmented approach but prioritizes MIDDLE strongly.
-        """
+   
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
-        # Scan the bottom area for line following
-        scan_row = int(h * 0.9)
+        # Look FURTHER ahead (higher in image) to see line before intersection branches
+        scan_row = int(h * 0.6)  # Changed from 0.9 to 0.6 - look ahead more
         row_data = gray[scan_row, :]
         _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # Define Custom Segment Boundaries - wider middle to be more forgiving
-        m_start = int((w/2) - ((1/4) * w) / 2)  # Middle is 25% of width
-        m_end = int((w/2) + ((1/4) * w) / 2)
+        # NARROW middle segment - only 15% of image width to ignore intersection branches
+        m_start = int((w/2) - ((1/7) * w) / 2)  # Narrow middle
+        m_end = int((w/2) + ((1/7) * w) / 2)
 
-        segments = {
-            'LEFT':   thresh[0 : m_start],
-            'MIDDLE': thresh[m_start : m_end],
-            'RIGHT':  thresh[m_end : w]
-        }
-
-        # Check which segments have a line
-        left_threshold = m_start * 0.15
-        middle_threshold = (m_end - m_start) * 0.5
-        right_threshold = (w - m_end) * 0.15
-
-        segment_density = {
-            'LEFT':   np.sum(segments['LEFT'] == 255) > left_threshold,
-            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle_threshold,
-            'RIGHT':  np.sum(segments['RIGHT'] == 255) > right_threshold
-        }
-
-        target_cx = None
-
-        # Strongly prioritize MIDDLE - only use sides if middle completely gone
-        if segment_density['MIDDLE']:
-            M = cv2.moments(segments['MIDDLE'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_start
-            self.line_found = True
+        # Only use the middle segment for line following
+        middle_segment = thresh[m_start:m_end]
         
-        # Only if middle not found, check both sides (likely at intersection)
-        elif segment_density['LEFT'] and segment_density['RIGHT']:
-            M_left = cv2.moments(segments['LEFT'])
-            M_right = cv2.moments(segments['RIGHT'])
+        # Calculate center of mass in middle segment
+        M = cv2.moments(middle_segment)
+        
+        if M["m00"] > 50:  # Lower threshold for detection
+            # Calculate position relative to middle segment
+            cx_in_segment = M["m10"] / M["m00"]
+            # Convert to full image coordinates
+            target_cx = cx_in_segment + m_start
             
-            if M_left["m00"] > 0 and M_right["m00"] > 0:
-                cx_left = M_left["m10"] / M_left["m00"]
-                cx_right = (M_right["m10"] / M_right["m00"]) + m_end
-                # Average to stay centered
-                target_cx = (cx_left + cx_right) / 2.0
-            self.line_found = True
-                
-        elif segment_density['LEFT']:
-            M = cv2.moments(segments['LEFT'])
-            if M["m00"] > 0:
-                target_cx = M["m10"] / M["m00"]
-            self.line_found = True
-        
-        elif segment_density['RIGHT']:
-            M = cv2.moments(segments['RIGHT'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_end
-            self.line_found = True
-        else:
-            self.line_found = False
-
-        # Calculate error
-        if target_cx is not None:
+            # Calculate normalized error
             new_error = float(target_cx - (w / 2)) / (w / 2)
+            
             self.line_error = new_error
             self.line_found = True
         else:
-            self.line_found = False
+            # If we can't find line in narrow middle, look at full bottom row as fallback
+            # This helps recovery after turns
+            scan_row_bottom = int(h * 0.95)
+            row_data_bottom = gray[scan_row_bottom, :]
+            _, thresh_bottom = cv2.threshold(row_data_bottom, 50, 255, cv2.THRESH_BINARY_INV)
+            
+            # Still use middle region but at the very bottom
+            bottom_middle = thresh_bottom[m_start:m_end]
+            M_bottom = cv2.moments(bottom_middle)
+            
+            if M_bottom["m00"] > 50:
+                cx_in_segment = M_bottom["m10"] / M_bottom["m00"]
+                target_cx = cx_in_segment + m_start
+                new_error = float(target_cx - (w / 2)) / (w / 2)
+                self.line_error = new_error
+                self.line_found = True
+            else:
+                self.line_found = False
 
         # House detection logic
         if self.all_turns_complete:   
@@ -356,6 +330,7 @@ class CameraFollower(Node):
             center = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible = np.sum(mask > 0) > 1200
             self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
 
 
 
