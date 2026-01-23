@@ -57,6 +57,8 @@ class CameraFollower(Node):
         self.already_failed = False
 
         self.f_line_found = False
+        self.heading_ref = None
+        self.heading_kp = 0.6    # start 0.4–0.8
 
 
         self.house_visible = False
@@ -332,9 +334,11 @@ class CameraFollower(Node):
         # 5. Calculate error
         if target_cx is not None:
             new_error = float(target_cx - (w / 2)) / (w / 2)
+            if abs(new_error) < 0.08:
+                self.heading_ref = self.current_yaw
             
             # Apply minimum force threshold
-            min_force = 0.3
+            min_force = 0.1
             if new_error > 0:
                 self.line_error = max(new_error, min_force)
             else:
@@ -410,6 +414,12 @@ class CameraFollower(Node):
         
         # Combine
         angular = -(P + I + D)
+
+        # Heading hold correction
+        if self.heading_ref is not None:
+            heading_error = self.angle_error(self.heading_ref, self.current_yaw)
+            angular += self.heading_kp * heading_error
+
         
         # Reset integral on zero crossing
         if (self.line_error > 0 and self.last_line_error < 0) or \
