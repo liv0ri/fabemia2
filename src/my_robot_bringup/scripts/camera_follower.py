@@ -313,35 +313,35 @@ class CameraFollower(Node):
 
         target_cx = None
 
-        # 4. "Winner Takes All" Logic for Forks
+        # 4. "Winner Takes All" Logic
+        target_cx = None
         
-        # PRIORITY 1: If the line is in the MIDDLE, follow it. 
-        # This effectively ignores the branching line on the Left or Right.
         if segment_density['MIDDLE']:
             M = cv2.moments(segments['MIDDLE'])
             if M["m00"] > 0:
-                local_cx = M["m10"] / M["m00"]
-                target_cx = local_cx + m_start
-                raw_error = float(target_cx - (w/2)) / (w/2)
-                self.line_error = raw_error * 1.5
-
-        # PRIORITY 2: If Middle is empty, check sides (Recovery Mode)
-        # Only check these if we DON'T see the middle, so we don't get distracted by forks.
+                target_cx = (M["m10"] / M["m00"]) + m_start
+        
         elif segment_density['LEFT']:
             M = cv2.moments(segments['LEFT'])
             if M["m00"] > 0:
-                local_cx = M["m10"] / M["m00"]
-                target_cx = local_cx # Offset is 0
+                target_cx = (M["m10"] / M["m00"]) # No offset
         
         elif segment_density['RIGHT']:
             M = cv2.moments(segments['RIGHT'])
             if M["m00"] > 0:
-                local_cx = M["m10"] / M["m00"]
-                target_cx = local_cx + m_end
+                target_cx = (M["m10"] / M["m00"]) + m_end
 
-        # 5. Update Error
+        # 5. Single Unified Error Update
         if target_cx is not None:
-            self.line_error = float(target_cx - (w / 2)) / (w / 2)
+            # Calculate normalized error once
+            new_error = float(target_cx - (w / 2)) / (w / 2)
+            
+            # Apply the "Middle Boost" consistently
+            if segment_density['MIDDLE']:
+                self.line_error = new_error * 1.5
+            else:
+                self.line_error = new_error
+                
             self.line_found = True
         else:
             self.line_found = False
