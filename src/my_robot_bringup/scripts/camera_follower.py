@@ -555,6 +555,7 @@ class CameraFollower(Node):
                     self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
 
                     #Go straight at intersection Logic
+                    #this should also work if you are coming up to a T wher eyou can go left or right
                     if(self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
                         self.start_turn(self.turn_plan[self.turn_index])
                         return
