@@ -80,7 +80,6 @@ class CameraFollower(Node):
             1
         )
 
-        #"""
 
         # Bottom-middle - main line following
         self.bm_sub = self.create_subscription(
@@ -106,7 +105,6 @@ class CameraFollower(Node):
             10
         )
 
-        #"""
 
         # Odometry subscriber
         self.odom_sub = self.create_subscription(
@@ -411,15 +409,10 @@ class CameraFollower(Node):
         max_integral = 3.0
         self.sum_line_error = max(min(self.sum_line_error, max_integral), -max_integral)
         
-        # PID gains
-        kp = self.kp
-        ki = self.ki
-        kd = self.kd
-        
         # Calculate terms
-        P = self.line_error * kp
-        I = self.sum_line_error * ki
-        D = (self.line_error - self.last_line_error) * kd
+        P = self.line_error * self.kp
+        I = self.sum_line_error * self.ki
+        D = (self.line_error - self.last_line_error) * self.kd
         
         # Combine
         angular = -(P + I + D)
