@@ -502,6 +502,15 @@ class CameraFollower(Node):
                 
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
+
+                if(abs(error) >= 1.396263): #80 degrees, the robot must have turned at some point
+                    closestCardinal = self.current_cardinal_target
+                    for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
+                        if self.angle_error(self.cardinals[c], self.current_yaw) < error :
+                            closestCardinal = self.cardinals[c]
+
+                    self.current_cardinal_target = closestCardinal
+                    self.target_yaw = closestCardinal
                 
                 ANGULAR = self.kp * error
                 
