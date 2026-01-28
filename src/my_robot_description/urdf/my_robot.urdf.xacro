@@ -8,5 +8,6 @@
     <xacro:include filename="cameraBM.xacro" />
     <xacro:include filename="cameraBL.xacro" />
     <xacro:include filename="cameraBR.xacro" />
+    <xacro:include filename="camera_colour.xacro" />
 
 </robot>
