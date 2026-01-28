@@ -176,13 +176,6 @@ class CameraFollower(Node):
         # this is done so it can send another house
         self.done_pub = self.create_publisher(String, 'navigation_done', 10)
 
-        self.box_pub = self.create_publisher(
-            String,
-            'spawn_box_for_house',
-            10
-        )
-
-        self.box_spawned = False
 
 
     def nav_callback(self, msg):
@@ -425,11 +418,13 @@ class CameraFollower(Node):
         # Combine
         angular = -(P + I + D)
 
+
+        """
         # Heading hold correction
         if self.heading_ref is not None:
             heading_error = self.angle_error(self.heading_ref, self.current_yaw)
             angular += self.heading_kp * heading_error
-
+        """
         
         # Reset integral on zero crossing
         if (self.line_error > 0 and self.last_line_error < 0) or \
