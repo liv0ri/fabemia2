@@ -59,6 +59,7 @@ class CameraFollower(Node):
         
         # NEW: Intersection detection
         self.at_intersection = False
+        self.approaching_intersection = False  # NEW: for slowing down approach
         self.front_magenta_ratio = 0.0
 
         self.f_line_found = False
@@ -348,6 +349,29 @@ class CameraFollower(Node):
     def front_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
+        
+        # NEW: Check for magenta ahead - if we see it, target the magenta instead of black lines
+        magenta_ratio = self.detect_magenta_ratio(img)
+        
+        # If we see magenta ahead (approaching intersection), target it
+        if magenta_ratio > 0.05:  # Seeing some magenta ahead (5% threshold)
+            self.approaching_intersection = True
+            # Find the center of the magenta to target it
+            lower_magenta = np.array([200, 0, 200])
+            upper_magenta = np.array([255, 50, 255])
+            magenta_mask = cv2.inRange(img, lower_magenta, upper_magenta)
+            
+            M = cv2.moments(magenta_mask)
+            if M["m00"] > 0:
+                magenta_cx = M["m10"] / M["m00"]
+                # Calculate error to center on magenta
+                new_error = float(magenta_cx - (w / 2)) / (w / 2)
+                self.line_error = new_error
+                self.f_line_found = True
+                self.get_logger().debug(f"Targeting magenta, ratio: {magenta_ratio:.2f}")
+                return  # Skip normal line following
+        else:
+            self.approaching_intersection = False
         
         # ORIGINAL: Line following logic (unchanged)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -694,7 +718,13 @@ class CameraFollower(Node):
 
                 # Normal line following
                 if self.f_line_found:
-                    linear, angular = self.calculate_line_following_command(0.15)
+                    # Slow down when approaching intersection
+                    if self.approaching_intersection:
+                        linear, angular = self.calculate_line_following_command(0.08)  # Slower approach
+                        self.get_logger().debug("Approaching intersection - moving slowly")
+                    else:
+                        linear, angular = self.calculate_line_following_command(0.15)  # Normal speed
+                    
                     self.cmd.linear.x = linear
                     self.cmd.angular.z = angular
                     self.already_failed = False
