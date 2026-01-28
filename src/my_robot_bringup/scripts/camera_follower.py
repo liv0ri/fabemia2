@@ -15,7 +15,6 @@ import math
 from std_msgs.msg import String
 import json
 from rclpy.qos import QoSProfile, DurabilityPolicy
-from example_interfaces.srv import Trigger
 
 # robots states
 class Mode(Enum):
@@ -106,6 +105,13 @@ class CameraFollower(Node):
             10
         )
 
+        # Colour camera
+        self.colour_sub = self.create_subscription(
+            Image,
+            'colour_camera/image_raw',
+            self.colour_callback,
+            10
+        )
 
         # Odometry subscriber
         self.odom_sub = self.create_subscription(
@@ -154,6 +160,7 @@ class CameraFollower(Node):
             "C0": (0, 255, 45),
             "C1": (0, 255, 45),
             "C2": (0, 255, 45),
+            "obstacle": (128, 0, 128)
         }
 
         # Convert exact RGB to HSV using OpenCV
@@ -182,6 +189,12 @@ class CameraFollower(Node):
         )
 
         self.box_spawned = False
+        self.obstacle_detected = False
+        self.obstacle_cleared = False
+        self.obstacle_stop_start = None
+        self.obstacle_stop_duration = 30.0  # seconds
+        self.box_disappear_duration = 20.0  # seconds
+        self.box_removed = False
 
     def spawn_box_once(self, house):
         if self.box_spawned:
@@ -231,6 +244,7 @@ class CameraFollower(Node):
             return
 
         self.lower, self.upper = self.house_colours[self.TARGET_HOUSE]
+        self.colour_low, self.colour_up = self.house_colours["obstacle"]
 
         self.navigation_active = True
 
@@ -376,18 +390,32 @@ class CameraFollower(Node):
         else:
             self.f_line_found = False
 
-        # House detection logic (unchanged)
+    def colour_callback(self, msg):
+        h, w = msg.height, msg.width
+        img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
+        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        # House detection logic 
         if self.all_turns_complete:   
-            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
             center = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible = np.sum(mask > 0) > 1200
             self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+        # Only check for obstacle if not yet cleared
+        elif not self.obstacle_cleared:
+            mask = cv2.inRange(hsv, np.array(self.colour_low), np.array(self.colour_up))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
+            center = mask[:, w//2 - 80:w//2 + 80]
+            self.obstacle_detected = (np.sum(center > 0) / center.size) > self.stop_ratio
+            if self.obstacle_detected:
+                self.get_logger().info("Obstacle detected - stopping for 30s")
+                self.obstacle_stop_start = self.get_clock().now()
 
-
+                # Schedule box removal after 20 seconds
+                self.get_logger().info("Box will disappear in 20s")
+                self.create_timer(self.box_disappear_duration, self.remove_box)
 
     def normalize_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
@@ -505,6 +533,22 @@ class CameraFollower(Node):
         self.target_yaw = self.current_cardinal_target
 
     def control_loop(self):
+        # Handle obstacle stopping
+        if self.obstacle_detected and self.obstacle_stop_start is not None:
+            elapsed = (self.get_clock().now() - self.obstacle_stop_start).nanoseconds / 1e9
+            if elapsed < self.obstacle_stop_duration:
+                # Stop robot
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = 0.0
+                self.publisher.publish(self.cmd)
+                return
+            else:
+                # Obstacle cleared - resume
+                self.obstacle_detected = False
+                self.obstacle_cleared = True
+                self.obstacle_stop_start = None
+                self.get_logger().info("Obstacle cleared - resuming navigation")
+                
         if not self.navigation_active:
             self.publisher.publish(Twist())
             return
