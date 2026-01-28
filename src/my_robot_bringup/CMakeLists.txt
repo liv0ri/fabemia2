@@ -39,7 +39,7 @@ install(PROGRAMS
 )
 
 install(PROGRAMS
-  scripts/random_box_spawner.py
+  scripts/box_spawner.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

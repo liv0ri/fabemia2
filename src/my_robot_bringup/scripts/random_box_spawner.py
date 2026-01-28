@@ -7,9 +7,9 @@ from std_msgs.msg import String
 from config import BOX_POSITIONS
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
-class RandomBoxSpawner(Node):
+class BoxSpawner(Node):
     def __init__(self):
-        super().__init__('random_box_spawner')
+        super().__init__('box_spawner')
         
         # Define predefined positions
         self.positions = [
@@ -131,7 +131,7 @@ class RandomBoxSpawner(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = RandomBoxSpawner()
+    node = BoxSpawner()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

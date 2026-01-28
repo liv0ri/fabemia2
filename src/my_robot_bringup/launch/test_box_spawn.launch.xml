@@ -14,6 +14,6 @@
     </node>
 
     <!-- Spawn random box -->
-    <node pkg="my_robot_bringup" exec="random_box_spawner.py" output="screen"/>
+    <node pkg="my_robot_bringup" exec="box_spawner.py" output="screen"/>
 
 </launch>

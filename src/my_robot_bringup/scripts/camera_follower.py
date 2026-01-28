@@ -192,8 +192,8 @@ class CameraFollower(Node):
         self.obstacle_detected = False
         self.obstacle_cleared = False
         self.obstacle_stop_start = None
-        self.obstacle_stop_duration = 30.0  # seconds
-        self.box_disappear_duration = 20.0  # seconds
+        self.obstacle_stop_duration = 30.0 
+        self.box_disappear_duration = 20.0 
         self.box_removed = False
 
     def spawn_box_once(self, house):
@@ -550,7 +550,7 @@ class CameraFollower(Node):
                 self.obstacle_cleared = True
                 self.obstacle_stop_start = None
                 self.get_logger().info("Obstacle cleared - resuming navigation")
-                
+
         if not self.navigation_active:
             self.publisher.publish(Twist())
             return
