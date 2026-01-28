@@ -184,23 +184,13 @@ class CameraFollower(Node):
 
         self.box_spawned = False
 
-    def spawn_box_once(self, house):
-        if self.box_spawned:
-            return
-
-        msg = String()
-        msg.data = house
-        self.box_pub.publish(msg)
-
-        self.get_logger().info(f"Requested box spawn for {house}")
-        self.box_spawned = True
 
     def nav_callback(self, msg):
         data = json.loads(msg.data)
 
         self.start = data['start']
         self.TARGET_HOUSE = data['target']
-        self.spawn_box_once(self.TARGET_HOUSE)
+
 
         self.get_logger().info(
             f"Received navigation command: {self.start} → {self.TARGET_HOUSE}"
@@ -365,12 +355,6 @@ class CameraFollower(Node):
             if abs(new_error) < 0.08:
                 self.heading_ref = self.current_yaw
             
-            # Apply minimum force threshold
-            #min_force = 0.1
-            #if new_error > 0:
-            #    self.line_error = max(new_error, min_force)
-            #else:
-            #    self.line_error = min(new_error, -min_force)
             self.line_error = new_error
             self.f_line_found = True
         else:
@@ -460,50 +444,6 @@ class CameraFollower(Node):
         return base_speed, angular
     
 
-    def start_turn(self, turn_right, half_turn=False):
-        self.doing_turn = True
-        # I think we need a check here for whether or not self.current_cardinal_target is actually correct
-        # since the map has some corners, at which the robot would need to turn, but these turns 
-        # aren't in dir dir, and not intersections
-
-        if half_turn:
-            # Turn around
-            #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi)
-
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
-                self.current_cardinal_target = self.cardinals["SOUTH"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
-                self.current_cardinal_target = self.cardinals["NORTH"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
-                self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
-                self.current_cardinal_target = self.cardinals["WEST"]
-
-        elif turn_right:
-            # RIGHT = Subtract 90 degrees (Clockwise in ROS)
-            #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target - math.pi/2)
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
-                self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
-                self.current_cardinal_target = self.cardinals["WEST"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
-                self.current_cardinal_target = self.cardinals["NORTH"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
-                self.current_cardinal_target = self.cardinals["SOUTH"]
-        else:
-            # LEFT = Add 90 degrees (Counter-Clockwise in ROS)
-            #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi/2)
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
-                self.current_cardinal_target = self.cardinals["WEST"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
-                self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
-                self.current_cardinal_target = self.cardinals["SOUTH"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
-                self.current_cardinal_target = self.cardinals["NORTH"]
-                
-        self.target_yaw = self.current_cardinal_target
-
     def control_loop(self):
         if not self.navigation_active:
             self.publisher.publish(Twist())
@@ -513,116 +453,37 @@ class CameraFollower(Node):
             self.publisher.publish(Twist())
             return
         
-        # Initial setup 
-        if self.turn_index == 0 and not self.doing_turn:
-            self.get_logger().info("Starting navigation - initiating first turn")
-            half_turn = (self.start in ["HOUSE_2", "HOUSE_7"] and self.turn_plan[0] == "right")
-            self.start_turn(self.turn_plan[0] == "right", half_turn=half_turn)
 
+            
         if self.mode == Mode.FOLLOW_LINE:
-            # Handle active turn
-            if self.doing_turn:
-                self.cmd.linear.x = 0.0
-                
-                # Calculate shortest angular distance to target
-                error = self.angle_error(self.target_yaw, self.current_yaw)
 
-                """
-                if(abs(error) >= 1.396263): #80 degrees, the robot must have turned at some point
-                    closestCardinal = self.current_cardinal_target
-                    for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
-                        if self.angle_error(self.cardinals[c], self.current_yaw) < error :
-                            closestCardinal = self.cardinals[c]
+            # Normal line following
+            if self.f_line_found:
+                linear, angular = self.calculate_line_following_command(0.15)
+                self.cmd.linear.x = linear
+                self.cmd.angular.z = angular
+                self.already_failed = False
 
-                    self.current_cardinal_target = closestCardinal
-                    self.target_yaw = closestCardinal
-                """
-                ANGULAR = self.kp * error
-                
-                # Minimum rotation speed to overcome friction
-                if ANGULAR > 0:
-                    self.cmd.angular.z = max(ANGULAR, 0.15)
-                else:
-                    self.cmd.angular.z = min(ANGULAR, -0.15)
 
-                # Check if turn is complete
-                if abs(error) < 0.05:
-                    self.cmd.angular.z = 0.0
-                    self.cmd.linear.x = 0.0
-                    self.doing_turn = False
-                    self.turn_index += 1
-                    self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
-                    self.needToClearIntersection = True
-                    
-                    # Check if all turns are done
-                    if self.turn_index >= len(self.turn_plan):
-                        self.all_turns_complete = True
-                        self.get_logger().info("All turns complete - searching for house")
-                                
-                self.publisher.publish(self.cmd)
                 
-            # Normal line following mode
             else:
-                # CRITICAL: Intersection detection using BOTTOM cameras only
-                # T-junction: middle line exists AND (left OR right line appears)
-                intersection_detected = (
-                    self.line_found and 
-                    (self.left_line or self.right_line)
-                )
-
-                # Detect intersection and execute turn
-                if intersection_detected and not self.all_turns_complete and not self.needToClearIntersection:
+                # Lost line - recovery mode
+                self.sum_line_error = 0.0
+                self.cmd.linear.x = 0.0
                     
-                    self.needToClearIntersection = True
-
-                    # Stop completely before turning
-                    self.cmd.linear.x = 0.0
-                    self.cmd.angular.z = 0.0
-                    self.publisher.publish(self.cmd)
-                    
-                    # Initiate turn
-                    turn_direction = "RIGHT" if self.turn_plan[self.turn_index] == "right" else "LEFT"
-                    self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
-
-                    #Go straight at intersection Logic
-                    #this should also work if you are coming up to a T wher eyou can go left or right
-                    if(self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
-                        self.start_turn(self.turn_plan[self.turn_index])
-                        return
-                    
-                    #otherwise go onto line following vvv
-                    
-
-                # Normal line following
-                if self.f_line_found:
-                    linear, angular = self.calculate_line_following_command(0.15)
-                    self.cmd.linear.x = linear
-                    self.cmd.angular.z = angular
-                    self.already_failed = False
-
-                    # Clear intersection flag when we've passed it
-                    if not intersection_detected and self.needToClearIntersection:
-                        self.needToClearIntersection = False
-                        self.get_logger().info("Intersection cleared")
-                    
+                # Spin in direction of last known error
+                if self.already_failed:
+                    spin_speed = 0.7
                 else:
-                    # Lost line - recovery mode
-                    self.sum_line_error = 0.0
-                    self.cmd.linear.x = 0.0
+                    spin_speed = 0.4
+                    self.already_failed = True
+                
+                if self.last_line_error > 0:
+                    self.cmd.angular.z = -spin_speed  # Turn right
+                else:
+                    self.cmd.angular.z = spin_speed   # Turn left
                     
-                    # Spin in direction of last known error
-                    if self.already_failed:
-                        spin_speed = 0.7
-                    else:
-                        spin_speed = 0.4
-                        self.already_failed = True
-                    
-                    if self.last_line_error > 0:
-                        self.cmd.angular.z = -spin_speed  # Turn right
-                    else:
-                        self.cmd.angular.z = spin_speed   # Turn left
-                        
-                    self.get_logger().debug("Line lost - recovering...")
+                self.get_logger().debug("Line lost - recovering...")
 
             # House detection
             if self.all_turns_complete and self.house_visible:
