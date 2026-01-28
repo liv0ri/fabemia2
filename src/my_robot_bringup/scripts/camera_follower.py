@@ -15,7 +15,6 @@ import math
 from std_msgs.msg import String
 import json
 from rclpy.qos import QoSProfile, DurabilityPolicy
-import subprocess
 
 # robots states
 class Mode(Enum):
@@ -55,7 +54,12 @@ class CameraFollower(Node):
         self.sum_line_error = 0.0
         self.left_line = False
         self.right_line = False
+        self.front_line = False  # NEW: front path detection
         self.already_failed = False
+        
+        # NEW: Intersection detection
+        self.at_intersection = False
+        self.front_magenta_ratio = 0.0
 
         self.f_line_found = False
         self.heading_ref = None
@@ -80,6 +84,7 @@ class CameraFollower(Node):
             self.front_callback,
             1
         )
+
 
         # Bottom-middle - main line following
         self.bm_sub = self.create_subscription(
@@ -192,8 +197,8 @@ class CameraFollower(Node):
         self.obstacle_detected = False
         self.obstacle_cleared = False
         self.obstacle_stop_start = None
-        self.obstacle_stop_duration = 30.0 
-        self.box_disappear_duration = 20.0 
+        self.obstacle_stop_duration = 30.0  # seconds
+        self.box_disappear_duration = 20.0  # seconds
         self.box_removed = False
 
     def spawn_box_once(self, house):
@@ -260,6 +265,45 @@ class CameraFollower(Node):
         lower_black = np.array([0, 0, 0])
         upper_black = np.array([180, 255, 60])
         return cv2.inRange(hsv, lower_black, upper_black)
+    
+    def detect_magenta_ratio(self, img):
+        """
+        Detect magenta (RGB 255, 0, 255) in an image.
+        Returns the ratio of magenta pixels to total pixels.
+        """
+        # Define magenta color range in RGB
+        lower_magenta = np.array([200, 0, 200])
+        upper_magenta = np.array([255, 50, 255])
+        
+        # Create mask for magenta
+        mask = cv2.inRange(img, lower_magenta, upper_magenta)
+        
+        # Calculate ratio
+        magenta_pixels = np.sum(mask > 0)
+        total_pixels = mask.size
+        ratio = magenta_pixels / total_pixels if total_pixels > 0 else 0.0
+        
+        return ratio
+    
+    def detect_white_line(self, img):
+        """
+        Check if there's a white line visible in the image.
+        Returns True if white line is detected, False otherwise.
+        """
+        # Define white color range in RGB
+        lower_white = np.array([200, 200, 200])
+        upper_white = np.array([255, 255, 255])
+        
+        # Create mask
+        white_mask = cv2.inRange(img, lower_white, upper_white)
+        
+        # Calculate white ratio
+        white_pixels = np.sum(white_mask > 0)
+        total_pixels = white_mask.size
+        white_ratio = white_pixels / total_pixels if total_pixels > 0 else 0.0
+        
+        # Threshold: if more than 2% of the image is white, consider it a path
+        return white_ratio > 0.02
 
     
     def bm_callback(self, msg):
@@ -283,23 +327,47 @@ class CameraFollower(Node):
     def bl_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
-        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-
-        # Same as right
-        mask = self.detect_black(hsv)
-        self.left_line = np.sum(mask > 0) > 500
+        
+        # NEW: Check for white line (path) when at intersection
+        if self.at_intersection:
+            self.left_line = self.detect_white_line(img)
+        else:
+            # ORIGINAL: Use black line detection for normal operation
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            mask = self.detect_black(hsv)
+            self.left_line = np.sum(mask > 0) > 500
 
     def br_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
-        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-
-        mask = self.detect_black(hsv)
-        self.right_line = np.sum(mask > 0) > 500
+        
+        # NEW: Check for white line (path) when at intersection
+        if self.at_intersection:
+            self.right_line = self.detect_white_line(img)
+        else:
+            # ORIGINAL: Use black line detection for normal operation
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            mask = self.detect_black(hsv)
+            self.right_line = np.sum(mask > 0) > 500
     
     def front_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
+        
+        # NEW: Check for magenta (intersection detection)
+        magenta_ratio = self.detect_magenta_ratio(img)
+        self.front_magenta_ratio = magenta_ratio
+        
+        # If we detect significant magenta, we're at an intersection
+        if magenta_ratio > 0.15:  # More than 15% of image is magenta
+            self.at_intersection = True
+            # Check if there's a front path (white beyond magenta)
+            self.front_line = self.detect_white_line(img)
+        else:
+            self.at_intersection = False
+            self.front_line = False
+        
+        # ORIGINAL: Line following logic (unchanged)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
         # 1. Scan the bottom area
@@ -418,30 +486,6 @@ class CameraFollower(Node):
                 # Schedule box removal after 20 seconds
                 self.get_logger().info("Box will disappear in 20s")
                 self.create_timer(self.box_disappear_duration, self.remove_box)
-
-    def remove_box(self):
-        if not self.spawned:
-            self.get_logger().warn("No box to remove")
-            return
-
-        box_name = "random_grey_box"
-        try:
-            cmd = [
-                'gz', 'service',
-                '-s', '/world/empty/delete',
-                '--reqtype', 'gz.msgs.Entity',
-                '--reptype', 'gz.msgs.Boolean',
-                '--timeout', '5000',
-                '--req', f'name: "{box_name}"'
-            ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-            
-            if result.returncode == 0:
-                self.get_logger().info(f'Box {box_name} removed successfully!')
-            else:
-                self.get_logger().error(f'Failed to remove box: {result.stderr}')
-        except Exception as e:
-            self.get_logger().error(f'Error removing box: {str(e)}')
 
     def normalize_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
@@ -574,7 +618,7 @@ class CameraFollower(Node):
                 self.obstacle_cleared = True
                 self.obstacle_stop_start = None
                 self.get_logger().info("Obstacle cleared - resuming navigation")
-
+                
         if not self.navigation_active:
             self.publisher.publish(Twist())
             return
@@ -633,15 +677,14 @@ class CameraFollower(Node):
                 
             # Normal line following mode
             else:
-                # CRITICAL: Intersection detection using BOTTOM cameras only
-                # T-junction: middle line exists AND (left OR right line appears)
-                intersection_detected = (
-                    self.line_found and 
-                    (self.left_line or self.right_line)
-                )
+                # NEW: Intersection detection using MAGENTA from front camera
+                intersection_detected = self.at_intersection
 
                 # Detect intersection and execute turn
                 if intersection_detected and not self.all_turns_complete and not self.needToClearIntersection:
+                    
+                    self.get_logger().info(f"Intersection detected! Magenta ratio: {self.front_magenta_ratio:.2f}")
+                    self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
                     
                     self.needToClearIntersection = True
 
@@ -650,17 +693,21 @@ class CameraFollower(Node):
                     self.cmd.angular.z = 0.0
                     self.publisher.publish(self.cmd)
                     
-                    # Initiate turn
+                    # Initiate turn based on turn plan
                     turn_direction = "RIGHT" if self.turn_plan[self.turn_index] == "right" else "LEFT"
                     self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
 
-                    #Go straight at intersection Logic
-                    #this should also work if you are coming up to a T wher eyou can go left or right
-                    if(self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
+                    # Logic: only execute turn if the path exists
+                    # If turning right and right path exists, OR turning left and left path exists
+                    if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
                         self.start_turn(self.turn_plan[self.turn_index])
                         return
-                    
-                    #otherwise go onto line following vvv
+                    elif self.front_line:
+                        # If the intended turn path doesn't exist but front does, go straight
+                        self.get_logger().info("Intended turn path blocked, continuing straight")
+                        # Don't start a turn, just continue following the line
+                    else:
+                        self.get_logger().warn("No valid path detected at intersection!")
                     
 
                 # Normal line following
