@@ -43,9 +43,9 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 0.4
-        self.ki = 0.001
-        self.kd = 0.3
+        self.kp = 0.2
+        self.ki = 0.0
+        self.kd = 0.1
 
         self.line_found = False
         # offset from center
@@ -506,6 +506,7 @@ class CameraFollower(Node):
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
 
+                """
                 if(abs(error) >= 1.396263): #80 degrees, the robot must have turned at some point
                     closestCardinal = self.current_cardinal_target
                     for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
@@ -514,7 +515,7 @@ class CameraFollower(Node):
 
                     self.current_cardinal_target = closestCardinal
                     self.target_yaw = closestCardinal
-                
+                """
                 ANGULAR = self.kp * error
                 
                 # Minimum rotation speed to overcome friction
