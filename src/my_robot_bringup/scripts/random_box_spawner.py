@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 import subprocess
 from std_msgs.msg import String
-from config import HOUSE_POSITIONS
+from config import BOX_POSITIONS
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
 class RandomBoxSpawner(Node):
@@ -34,42 +34,6 @@ class RandomBoxSpawner(Node):
             self.spawn_box_callback,
             qos
         )
-        
-    
-    # def wait_for_gazebo(self):
-    #     """Wait until Gazebo clock is publishing"""
-    #     self.clock_received = False
-        
-    #     def clock_callback(msg):
-    #         self.clock_received = True
-        
-    #     # Subscribe to clock topic
-    #     clock_sub = self.create_subscription(
-    #         Clock,
-    #         '/clock',
-    #         clock_callback,
-    #         10
-    #     )
-        
-    #     # Wait for clock messages
-    #     max_wait = 30.0
-    #     start_time = time.time()
-        
-    #     while not self.clock_received and (time.time() - start_time) < max_wait:
-    #         rclpy.spin_once(self, timeout_sec=0.5)
-    #         if not self.clock_received:
-    #             elapsed = int(time.time() - start_time)
-    #             self.get_logger().info(f'Waiting for Gazebo clock... ({elapsed}s)')
-        
-    #     if self.clock_received:
-    #         self.get_logger().info('Gazebo clock detected! Waiting for GUI to fully load...')
-    #         time.sleep(20.0)  # Extended wait for GUI to fully load
-    #         self.get_logger().info('Ready to spawn!')
-    #     else:
-    #         self.get_logger().warn('Timeout waiting for Gazebo, attempting to spawn anyway...')
-        
-    #     # Clean up subscription
-    #     self.destroy_subscription(clock_sub)
 
     def spawn_box_callback(self, msg):
       house = msg.data
@@ -89,13 +53,13 @@ class RandomBoxSpawner(Node):
       self.spawned_house = house
     
     def spawn_box_for_house(self, house):
-      house_positions = HOUSE_POSITIONS
+      box_positions = BOX_POSITIONS
 
-      if house not in house_positions:
+      if house not in box_positions:
           self.get_logger().error(f"Unknown house {house}")
           return
 
-      x, y, z = house_positions[house]
+      x, y, z = box_positions[house]
       self.spawn_box_at(x, y, z)
 
     def spawn_box_at(self, x, y, z):        
@@ -133,8 +97,8 @@ class RandomBoxSpawner(Node):
           </box>
         </geometry>
         <material>
-          <ambient>0.5 0.5 0.5 1</ambient>
-          <diffuse>0.5 0.5 0.5 1</diffuse>
+          <ambient>0.5 0.0 0.5 1</ambient>
+          <diffuse>0.5 0.0 0.5 1</diffuse>
           <specular>0.3 0.3 0.3 1</specular>
         </material>
       </visual>
