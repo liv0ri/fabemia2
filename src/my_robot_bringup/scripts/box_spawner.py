@@ -18,10 +18,6 @@ class BoxSpawner(Node):
             (-3.5, -6.5, 0.5),
             (4.5, -4.5, 0.5)
         ]
-        
-        # Wait for Gazebo to be ready
-        self.get_logger().info('Waiting for Gazebo to fully initialize...')
-        # self.wait_for_gazebo()
 
         self.spawned = False
         self.spawned_house = None

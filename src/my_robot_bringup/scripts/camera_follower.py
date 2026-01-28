@@ -15,6 +15,7 @@ import math
 from std_msgs.msg import String
 import json
 from rclpy.qos import QoSProfile, DurabilityPolicy
+import subprocess
 
 # robots states
 class Mode(Enum):
@@ -79,7 +80,6 @@ class CameraFollower(Node):
             self.front_callback,
             1
         )
-
 
         # Bottom-middle - main line following
         self.bm_sub = self.create_subscription(
@@ -418,6 +418,30 @@ class CameraFollower(Node):
                 # Schedule box removal after 20 seconds
                 self.get_logger().info("Box will disappear in 20s")
                 self.create_timer(self.box_disappear_duration, self.remove_box)
+
+    def remove_box(self):
+        if not self.spawned:
+            self.get_logger().warn("No box to remove")
+            return
+
+        box_name = "random_grey_box"
+        try:
+            cmd = [
+                'gz', 'service',
+                '-s', '/world/empty/delete',
+                '--reqtype', 'gz.msgs.Entity',
+                '--reptype', 'gz.msgs.Boolean',
+                '--timeout', '5000',
+                '--req', f'name: "{box_name}"'
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                self.get_logger().info(f'Box {box_name} removed successfully!')
+            else:
+                self.get_logger().error(f'Failed to remove box: {result.stderr}')
+        except Exception as e:
+            self.get_logger().error(f'Error removing box: {str(e)}')
 
     def normalize_angle(self, angle):
         return math.atan2(math.sin(angle), math.cos(angle))
