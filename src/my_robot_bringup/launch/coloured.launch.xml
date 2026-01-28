@@ -43,5 +43,5 @@
 
     <node pkg="my_robot_bringup" exec="camera_follower.py" output="screen"/>
 
-    <node pkg="my_robot_bringup" exec="ox_spawner.py" output="screen"/>
+    <node pkg="my_robot_bringup" exec="box_spawner.py" output="screen"/>
 </launch>

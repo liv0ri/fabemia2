@@ -10,14 +10,6 @@ from rclpy.qos import QoSProfile, DurabilityPolicy
 class BoxSpawner(Node):
     def __init__(self):
         super().__init__('box_spawner')
-        
-        # Define predefined positions
-        self.positions = [
-            (-1.5, 6.45, 0.5),
-            (-2.5, 1.5, 0.5),
-            (-3.5, -6.5, 0.5),
-            (4.5, -4.5, 0.5)
-        ]
 
         self.spawned = False
         self.spawned_house = None
