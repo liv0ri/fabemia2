@@ -43,8 +43,8 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 0.4706
-        self.ki = 0.0
+        self.kp = 0.8
+        self.ki = 0.01
         self.kd = 0.0471
 
         # offset from center
@@ -290,7 +290,6 @@ class CameraFollower(Node):
     def bm_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
-        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
         # NEW: Check if robot CENTER is over magenta (intersection confirmation)
         magenta_ratio = self.detect_magenta_ratio(img)
@@ -319,7 +318,6 @@ class CameraFollower(Node):
         black_pixels = np.sum(mask > 0)
         
         # At intersection: need to see black line to confirm path exists
-        # Normal operation: original threshold
         self.left_line = black_pixels > 100
 
     def br_callback(self, msg):
@@ -332,7 +330,6 @@ class CameraFollower(Node):
         black_pixels = np.sum(mask > 0)
         
         # At intersection: need to see black line to confirm path exists
-        # Normal operation: original threshold
         self.right_line = black_pixels > 100
     
     def front_callback(self, msg):
@@ -346,7 +343,7 @@ class CameraFollower(Node):
         magenta_ratio_roi = self.detect_magenta_ratio(img_roi)
         
         # If we see magenta in bottom of front camera (approaching intersection)
-        if magenta_ratio_roi > 0.90:  # 90% threshold in the ROI - we don't want it locking too early, because it may be misaligned.
+        if magenta_ratio_roi > 0.80:  # 80% threshold in the ROI - we don't want it locking too early, because it may be misaligned.
         
             self.approaching_intersection = True
             self.get_logger().info(f"Approaching intersection")
@@ -371,7 +368,9 @@ class CameraFollower(Node):
             
             return
         else:
+            
             self.approaching_intersection = False
+            self.f_line_found = True
 
         
         # ORIGINAL: Line following logic (unchanged)
@@ -460,6 +459,7 @@ class CameraFollower(Node):
             self.f_line_found = True
         else:
             self.f_line_found = False
+            
 
     def colour_callback(self, msg):
         h, w = msg.height, msg.width
@@ -678,9 +678,9 @@ class CameraFollower(Node):
                                 
                 self.publisher.publish(self.cmd)
                 
-            # Normal line following mode
+            #NOT DOING TURN
             else:
-                # NEW: Intersection detection using MAGENTA from front camera
+                # NEW: Intersection detection using MAGENTA from middle camera
                 # Detect intersection and execute turn
                 if self.at_intersection and not self.all_turns_complete and not self.needToClearIntersection:
                     #also had and not self.front_line,  removing it for now
@@ -711,6 +711,13 @@ class CameraFollower(Node):
                         self.get_logger().warn("No valid path detected at intersection!")
                     
 
+                # Slow down when approaching intersection
+                if self.approaching_intersection and not self.at_intersection:
+                    self.cmd.linear.x = 0.1
+                    self.cmd.angular.z = 0.0
+                    self.get_logger().info("Approaching intersection - moving slowly")
+                    return
+
                 # Normal line following
                 if self.f_line_found:
                     
@@ -721,12 +728,7 @@ class CameraFollower(Node):
                     self.already_failed = False
 
                 else:
-                    # Slow down when approaching intersection
-                    if self.approaching_intersection:
-                        self.cmd.linear.x = 0.1
-                        self.cmd.angular.z = 0.0
-                        self.get_logger().info("Approaching intersection - moving slowly")
-                        return
+                    
 
                     # Lost line - recovery mode
                     self.sum_line_error = 0.0
@@ -744,7 +746,7 @@ class CameraFollower(Node):
                     else:
                         self.cmd.angular.z = spin_speed   # Turn left
                         
-                    self.get_logger().debug("Line lost - recovering...")
+                    self.get_logger().info("Line lost - recovering...")
 
             # House detection
             if self.all_turns_complete and self.house_visible:
