@@ -393,17 +393,16 @@ class CameraFollower(Node):
             self.f_line_found = False
 
     def colour_callback(self, msg):
-        self.get_logger().info("Colour callback triggered")
+        # self.get_logger().info("Colour callback triggered")
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        self.get_logger().info(f"hsv {hsv}")
-        self.get_logger().info(f"house colour low {self.colour_low}, up {self.colour_up}")
+        # self.get_logger().info(f"hsv {hsv}")
+        # self.get_logger().info(f"house colour low {self.colour_low}, up {self.colour_up}")
         # Only check for obstacle if not yet cleared
         if not self.obstacle_cleared:
             mask = cv2.inRange(hsv, np.array(self.colour_low), np.array(self.colour_up))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-            self.get_logger().info(f"obstacle mask {mask}")
             self.get_logger().info(f"Obstacle pixels detected: {np.sum(mask > 0)}")
 
             center = mask[:, w//2 - 80:w//2 + 80]
