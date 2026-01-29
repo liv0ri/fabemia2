@@ -362,7 +362,7 @@ class CameraFollower(Node):
             right_limit = int(w * 0.60)
             
             # Crop the HSV image to this top-middle box
-            hsv_top_middle = hsv[0:top_limit, left_limit:right_limit]
+            hsv_top_middle = img[0:top_limit, left_limit:right_limit]
             
             # Detect black in this specific ROI
             mask_black_ahead = self.detect_black(hsv_top_middle)
