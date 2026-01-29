@@ -558,7 +558,7 @@ class CameraFollower(Node):
 
     def control_loop(self):
         # Handle obstacle stopping
-        if self.obstacle_detected and self.obstacle_stop_start is not None:
+        if self.obstacle_detected and self.obstacle_stop_start is not None and self.start == "PO":
             elapsed = (self.get_clock().now() - self.obstacle_stop_start).nanoseconds / 1e9
             if elapsed >= self.box_disappear_duration and not self.obstacle_cleared:
                 self.remove_box()
