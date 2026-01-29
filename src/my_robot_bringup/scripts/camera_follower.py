@@ -186,7 +186,6 @@ class CameraFollower(Node):
         self.obstacle_stop_start = None
         self.obstacle_stop_duration = 20.0 
         self.box_disappear_duration = 10.0 
-        self.box_timer = None
         self.box_removed = False
 
     def spawn_box_once(self, house):
@@ -400,7 +399,7 @@ class CameraFollower(Node):
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
         # self.get_logger().info(f"hsv {hsv}")
-        self.get_logger().info(f"house colour low {self.colour_low}, up {self.colour_up}")
+        # self.get_logger().info(f"house colour low {self.colour_low}, up {self.colour_up}")
         # Only check for obstacle if not yet cleared
         if not self.obstacle_cleared:
             mask = cv2.inRange(hsv, np.array(self.colour_low), np.array(self.colour_up))
@@ -413,10 +412,6 @@ class CameraFollower(Node):
             if self.obstacle_detected and self.obstacle_stop_start is None:
                 self.get_logger().info("Obstacle detected - stopping for 30s")
                 self.obstacle_stop_start = self.get_clock().now()
-
-                # Schedule box removal after 20 seconds
-                self.get_logger().info("Box will disappear in 20s")
-                self.box_timer =self.create_timer(self.box_disappear_duration, self.remove_box)
 
         # House detection logic 
         if self.all_turns_complete:   
@@ -431,7 +426,7 @@ class CameraFollower(Node):
         if not self.box_spawned:
             self.get_logger().warn("No box to remove")
             return
-
+        self.get_logger().info("Removing box from simulation...")
         box_name = "random_purple_box"
         try:
             cmd = [
@@ -571,6 +566,9 @@ class CameraFollower(Node):
         if self.obstacle_detected and self.obstacle_stop_start is not None:
             self.get_logger().info("Robot stopped due to obstacle")
             elapsed = (self.get_clock().now() - self.obstacle_stop_start).nanoseconds / 1e9
+            if elapsed >= self.box_disappear_duration and not self.box_removed:
+                self.remove_box()
+                self.box_removed = True
             if elapsed < self.obstacle_stop_duration:
                 # Stop robot
                 self.cmd.linear.x = 0.0
