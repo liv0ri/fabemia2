@@ -59,6 +59,7 @@ class CameraFollower(Node):
         self.at_intersection = False
         self.approaching_intersection = False  # NEW: for slowing down approach
         self.front_magenta_ratio = 0.0
+        self.aligning_at_intersection = False
 
         self.f_line_found = False
         self.heading_ref = None
