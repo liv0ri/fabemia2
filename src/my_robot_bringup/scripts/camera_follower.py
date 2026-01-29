@@ -352,9 +352,9 @@ class CameraFollower(Node):
             self.get_logger().info(f"Approaching intersection")
             
             # Keep moving straight
-            self.line_error = 0.0
-            self.last_line_error = 0.0
-            self.f_line_found = True
+            #self.line_error = 0.0
+            #self.last_line_error = 0.0
+            self.f_line_found = False
 
             # 2. Check for black line in TOP MIDDLE (to see if path continues forward)
             # Define ROI: Top 30% of height, middle 20% of width
@@ -714,18 +714,21 @@ class CameraFollower(Node):
 
                 # Normal line following
                 if self.f_line_found:
-                    # Slow down when approaching intersection
-                    if self.approaching_intersection:
-                        linear, angular = self.calculate_line_following_command(0.10)  # Slower approach
-                        self.get_logger().debug("Approaching intersection - moving slowly")
-                    else:
-                        linear, angular = self.calculate_line_following_command(0.15)  # Normal speed
+                    
+                    linear, angular = self.calculate_line_following_command(0.15)  # Normal speed
                     
                     self.cmd.linear.x = linear
                     self.cmd.angular.z = angular
                     self.already_failed = False
 
                 else:
+                    # Slow down when approaching intersection
+                    if self.approaching_intersection:
+                        self.cmd.linear.x = 0.1
+                        self.cmd.angular.z = 0.0
+                        self.get_logger().info("Approaching intersection - moving slowly")
+                        return
+
                     # Lost line - recovery mode
                     self.sum_line_error = 0.0
                     self.cmd.linear.x = 0.0
