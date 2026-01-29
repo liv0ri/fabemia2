@@ -352,12 +352,13 @@ class CameraFollower(Node):
             self.get_logger().info(f"Approaching intersection")
             
             # Keep moving straight
-            self.line_error = 0.0 
+            self.line_error = 0.0
+            self.last_line_error = 0.0
             self.f_line_found = True
 
             # 2. Check for black line in TOP MIDDLE (to see if path continues forward)
             # Define ROI: Top 30% of height, middle 20% of width
-            top_limit = int(h * 0.30)
+            top_limit = int(h * 0.50)
             left_limit = int(w * 0.40)
             right_limit = int(w * 0.60)
             
@@ -458,12 +459,6 @@ class CameraFollower(Node):
             else:
                 self.heading_ref = None
             
-            # Apply minimum force threshold
-            #min_force = 0.1
-            #if new_error > 0:
-            #    self.line_error = max(new_error, min_force)
-            #else:
-            #    self.line_error = min(new_error, -min_force)
             self.line_error = new_error
             self.f_line_found = True
         else:
