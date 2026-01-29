@@ -44,9 +44,9 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 0.8
+        self.kp = 0.4706
         self.ki = 0.0
-        self.kd = 0.0
+        self.kd = 0.0471
 
         self.line_found = False
         # offset from center
