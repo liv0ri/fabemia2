@@ -200,7 +200,7 @@
           </geometry>
           <material>
             <ambient>0.300000012 0.300000012 0.300000012 1</ambient>
-            <diffuse>0 1 0.175999999 1</diffuse>
+            <diffuse>0.277999997 0.277999997 0.277999997 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
         </visual>
@@ -764,7 +764,7 @@
           </geometry>
           <material>
             <ambient>0.300000012 0.300000012 0.300000012 1</ambient>
-            <diffuse>0 1 0.175999999 1</diffuse>
+            <diffuse>0.277999997 0.277999997 0.277999997 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
         </visual>
@@ -999,7 +999,7 @@
           </geometry>
           <material>
             <ambient>0.300000012 0.300000012 0.300000012 1</ambient>
-            <diffuse>0 1 0.175999999 1</diffuse>
+            <diffuse>0.277999997 0.277999997 0.277999997 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
         </visual>
