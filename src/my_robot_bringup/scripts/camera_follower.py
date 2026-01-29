@@ -300,7 +300,11 @@ class CameraFollower(Node):
         if magenta_ratio > 0.90:  # More than 90% of image is magenta (robot center is ON the tile)
             self.at_intersection = True
         else:
+            if(self.at_intersection and self.needToClearIntersection):
+                self.needToClearIntersection = False
+                self.get_logger().info("Intersection cleared")
             self.at_intersection = False
+
 
     
     # check if enough pixels is found in any side camera
@@ -337,12 +341,12 @@ class CameraFollower(Node):
         
         # NEW: Check for magenta in BOTTOM portion of front camera (approaching intersection)
         # Only look at bottom 30% of the frame
-        roi_start = int(h * 0.9)  # Start from 90% down
+        roi_start = int(h * 0.85)  # Start from 85% down
         img_roi = img[roi_start:h, :]
         magenta_ratio_roi = self.detect_magenta_ratio(img_roi)
         
         # If we see magenta in bottom of front camera (approaching intersection)
-        if magenta_ratio_roi > 0.10:  # 10% threshold in the ROI
+        if magenta_ratio_roi > 0.90:  # 90% threshold in the ROI - we don't want it locking too early, because it may be misaligned.
             self.approaching_intersection = True
             self.get_logger().debug(f"Front camera sees magenta: {magenta_ratio_roi:.2f} - approaching intersection")
             # Don't try to follow lines, just move forward slowly
@@ -663,10 +667,8 @@ class CameraFollower(Node):
             # Normal line following mode
             else:
                 # NEW: Intersection detection using MAGENTA from front camera
-                intersection_detected = self.at_intersection
-
                 # Detect intersection and execute turn
-                if intersection_detected and not self.all_turns_complete and not self.needToClearIntersection:
+                if self.at_intersection and not self.all_turns_complete and not self.needToClearIntersection and not self.front_line:
                     
                     self.get_logger().info(f"Intersection detected! Magenta ratio: {self.front_magenta_ratio:.2f}")
                     self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
@@ -708,11 +710,6 @@ class CameraFollower(Node):
                     self.cmd.angular.z = angular
                     self.already_failed = False
 
-                    # Clear intersection flag when we've passed it
-                    if not intersection_detected and self.needToClearIntersection:
-                        self.needToClearIntersection = False
-                        self.get_logger().info("Intersection cleared")
-                    
                 else:
                     # Lost line - recovery mode
                     self.sum_line_error = 0.0
