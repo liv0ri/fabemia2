@@ -43,7 +43,7 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 0.8
+        self.kp = 0.4
         self.ki = 0.01
         self.kd = 0.0471
 
@@ -700,7 +700,7 @@ class CameraFollower(Node):
                     self.publisher.publish(self.cmd)
                     
                     # Initiate turn based on turn plan
-                    turn_direction = "RIGHT" if self.turn_plan[self.turn_index] == True else "LEFT"
+                    turn_direction = "RIGHT" if self.turn_plan[self.turn_index] else "LEFT"
                     self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
 
                     # Logic: only execute turn if the path exists
