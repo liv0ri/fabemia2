@@ -688,32 +688,69 @@ class CameraFollower(Node):
                 # NEW: Intersection detection using MAGENTA from middle camera
                 # Detect intersection and execute turn
                 if self.at_intersection and not self.all_turns_complete and not self.needToClearIntersection:
-                    #also had and not self.front_line,  removing it for now
-                    self.get_logger().info(f"Intersection detected! Magenta ratio: {self.front_magenta_ratio:.2f}")
-                    self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
-                    
-                    self.needToClearIntersection = True
-
-                    # Stop completely before turning
-                    self.cmd.linear.x = 0.0
-                    self.cmd.angular.z = 0.0
-                    self.publisher.publish(self.cmd)
-                    
-                    # Initiate turn based on turn plan
-                    turn_direction = "RIGHT" if self.turn_plan[self.turn_index] else "LEFT"
-                    self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
-
-                    # Logic: only execute turn if the path exists
-                    # If turning right and right path exists, OR turning left and left path exists
-                    if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
-                        self.start_turn(self.turn_plan[self.turn_index])
+                    # Step 1: Initiate alignment to cardinal direction
+                    if not self.aligning_at_intersection:
+                        self.get_logger().info(f"Intersection detected! Magenta ratio: {self.front_magenta_ratio:.2f}")
+                        self.get_logger().info(f"Starting cardinal alignment to {self.current_cardinal_target:.2f} rad")
+                        
+                        # Stop completely
+                        self.cmd.linear.x = 0.0
+                        self.cmd.angular.z = 0.0
+                        self.publisher.publish(self.cmd)
+                        
+                        # Set flag to start alignment
+                        self.aligning_at_intersection = True
                         return
-                    elif self.front_line:
-                        # If the intended turn path doesn't exist but front does, go straight
-                        self.get_logger().info("Intended turn path blocked, continuing straight")
-                        # Don't start a turn, just continue following the line
-                    else:
-                        self.get_logger().warn("No valid path detected at intersection!")
+                    
+                    # Step 2: Align to cardinal direction
+                    elif self.aligning_at_intersection:
+                        # Calculate error to target cardinal direction
+                        error = self.angle_error(self.current_cardinal_target, self.current_yaw)
+                        
+                        # Stop moving forward, only rotate
+                        self.cmd.linear.x = 0.0
+                        
+                        ANGULAR = self.kp * error
+                        
+                        # Minimum rotation speed to overcome friction
+                        if ANGULAR > 0:
+                            self.cmd.angular.z = max(ANGULAR, 0.15)
+                        else:
+                            self.cmd.angular.z = min(ANGULAR, -0.15)
+                        
+                        # Check if alignment is complete
+                        if abs(error) < 0.05:  # Within 3 degrees
+                            self.cmd.angular.z = 0.0
+                            self.cmd.linear.x = 0.0
+                            self.publisher.publish(self.cmd)
+                            
+                            self.aligning_at_intersection = False
+                            self.get_logger().info(f"Cardinal alignment complete! Now reading paths...")
+                            
+                            # NOW take the camera readings after alignment
+                            self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
+                            
+                            self.needToClearIntersection = True
+                            
+                            # Initiate turn based on turn plan
+                            turn_direction = "RIGHT" if self.turn_plan[self.turn_index] else "LEFT"
+                            self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
+
+                            # Logic: only execute turn if the path exists
+                            # If turning right and right path exists, OR turning left and left path exists
+                            if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
+                                self.start_turn(self.turn_plan[self.turn_index])
+                                return
+                            elif self.front_line:
+                                # If the intended turn path doesn't exist but front does, go straight
+                                self.get_logger().info("Intended turn path blocked, continuing straight")
+                                # Don't start a turn, just continue following the line
+                            else:
+                                self.get_logger().warn("No valid path detected at intersection!")
+                        else:
+                            # Continue aligning
+                            self.publisher.publish(self.cmd)
+                            return
 
                 # Normal line following
                 if self.f_line_found:
