@@ -146,7 +146,7 @@ class CameraFollower(Node):
             "HOUSE_5": (255, 16, 0),
             "HOUSE_6": (0, 251, 255),
             "HOUSE_7": (255, 0, 229),
-            "HOUSE_8": (120, 255, 255),
+            "HOUSE_8": (120, 0, 255),
             "HOUSE_9": (0, 44, 255),
             "HOUSE_10": (146, 220, 255),
             "PO": (255, 255, 255),
@@ -162,8 +162,19 @@ class CameraFollower(Node):
             h, s, v = hsv
             # self.get_logger().info("Value of h in hsv", h, s, v, "in name", name)
             # widen HSV range to tolerate lighting and distinguish similar hues
-            lower = (max(h - 5, 0), 100, 80)
-            upper = (min(h + 5, 179), 255, 255)
+            if name == "HOUSE_4":
+                lower = (max(h - 8, 0), 30, 40)
+                upper = (min(h + 8, 179), 255, 255)
+            elif name == "HOUSE_8":
+                lower = (135, 40, 40)
+                upper = (165, 255, 255)
+            elif name == "HOUSE_9":
+                lower = (95, 40, 40)
+                upper = (135, 255, 255)
+            else:
+                lower = (max(h - 6, 0), 60, 40)
+                upper = (min(h + 6, 179), 255, 255)
+
 
             self.house_colours[name] = (lower, upper)
         
@@ -212,11 +223,6 @@ class CameraFollower(Node):
         self.doing_turn = False
         self.last_line_error = 0
         self.needToClearIntersection = False
-        self.all_turns_complete = False
-        self.mode = Mode.FOLLOW_LINE
-        self.house_seen_frames = 0
-        self.house_visible = False
-        self.house_reached = False
 
         # Reset heading lock to start reference
         if self.cardinals_initialized:

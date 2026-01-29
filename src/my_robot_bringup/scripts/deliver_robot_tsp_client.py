@@ -109,10 +109,6 @@ class DeliverobotTSPClient(Node):
         data = json.loads(msg.data)
         reached = data['reached']
 
-        if reached != self.optimized_route[self.route_index]:
-            self.get_logger().warn("Unexpected house reached, ignoring")
-            return
-
         self.get_logger().info(f"Confirmed arrival at {reached}")
 
         self.current = reached
