@@ -43,9 +43,9 @@ class CameraFollower(Node):
         self.odom_ready = False
         self.cardinals_initialized = False # New flag to set cardinals once
 
-        self.kp = 0.4
-        self.ki = 0.001
-        self.kd = 0.0471
+        self.kp = 0.5
+        self.ki = 0.0001
+        self.kd = 0.2
 
         # offset from center
         self.line_error = 0.0
@@ -359,7 +359,7 @@ class CameraFollower(Node):
             right_limit = int(w * 0.70)
             
             # Crop the HSV image to this top-middle box
-            hsv_top_middle = img[0:top_limit, left_limit:right_limit]
+            hsv_top_middle = img[:, :]
             
             # Detect black in this specific ROI
             mask_black_ahead = self.detect_black(hsv_top_middle)
@@ -499,9 +499,9 @@ class CameraFollower(Node):
             # Facing SOUTH (~3.14), adding pi/2 (Left) should result in EAST (~ -1.57)
             self.cardinals = {
                 'SOUTH': self.normalize_angle(0.0),
-                'WEST':  self.normalize_angle(math.pi/2 ) , # Right -0.2 to maybe correct 0.2 rad diff
+                'WEST':  self.normalize_angle(- math.pi/2 ) , # Right -0.2 to maybe correct 0.2 rad diff
                 'NORTH': self.normalize_angle(math.pi),    # Behind
-                'EAST':  self.normalize_angle(- math.pi/2 )  # Left
+                'EAST':  self.normalize_angle(math.pi/2 )  # Left
             }
             self.current_cardinal_target = self.cardinals['SOUTH']
             self.cardinals_initialized = True
