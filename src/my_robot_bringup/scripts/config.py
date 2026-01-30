@@ -2,81 +2,32 @@
 #turnRight = ?
 # true if you turn right false if you turn left
 directions = {
-        'PO': {'HOUSE_1': [True, False, False], 
-               'HOUSE_2': [True, True, False, True, False, True, False], 
-               'HOUSE_3': [True, True, False, False, True], 
-               'HOUSE_4': [True, True, True], 
-               'HOUSE_5': [False, False, False, True, False], 
-               'HOUSE_6': [False, False, False, True, True, True, False], 
-               'HOUSE_7': [False, True, False, True, True], 
-               'HOUSE_8': [False, True, False, False, False], 
-               'HOUSE_9': [False, True, False, True, False, False, True], 
-               'HOUSE_10': [False, False, True, False, False], 
-               'CHARGER_0': [False, True, True], 
-               'CHARGER_1': [True, True, False, True, False, False], 
-               'CHARGER_2': [False, True, False, True, False, True],
-        },
-        'CHARGER_0': {
-            'HOUSE_1': [True, False, True, False, False], 
-            'HOUSE_2': [True, False, True, True, False, True, False, True, False], 
-            'HOUSE_3': [True, False, True, True, False, False, True], 
-            'HOUSE_4': [True, False, True, True, True], 
-            'HOUSE_5': [True, True, False, True, False], 
-            'HOUSE_6': [True, True, False, True, True, True, False], 
-            'HOUSE_7': [False, True, True], 
-            'HOUSE_8': [False, False, False], 
-            'HOUSE_9': [False, True, False, False, True], 
-            'HOUSE_10': [False, False, True, True, True], 
-            'PO': [True, False, False], 
-            'CHARGER_1': [True, False, True, True, False, True, False, False], 
-            'CHARGER_2': [False, True, False, True],
-        },
-        'CHARGER_1': {
-            'PO': [False, True, False, True, False, True],
-            'HOUSE_1': [False, True, True, False, True],
-            'HOUSE_2': [True, False],
-            'HOUSE_3': [False, True, True, True],
-            'HOUSE_4': [False, True, False, False],
-            'HOUSE_5': [False, False, False, False],
-            'HOUSE_6': [True, True, False, False],
-            'HOUSE_7': [False, True, False, True, False, False, True, False, True, True],
-            'HOUSE_8': [False, True, True, False, True, True, True],
-            'HOUSE_9': [True, True, False, True, False],
-            'HOUSE_10': [False, False, True, False, False, False],            
-            'CHARGER_0': [False, True, False, True, False, False, True, True],
-            'CHARGER_2': [True, True, False, True, True, False],
-        },
+        'PO': {'HOUSE_1': [True, False], 
+               'HOUSE_2': [True, True, True, False], 
+               'HOUSE_3': [True, True, False], 
+               'HOUSE_4': [True, True], 
+               'HOUSE_5': [False, False, False, True], 
+               'HOUSE_6': [False, False, False, True, True], 
+               'HOUSE_7': [False, True, True], 
+               'HOUSE_8': [False, True, False], 
+               'HOUSE_9': [False, True, True], 
+               'HOUSE_10': [False, False, True, False]
 
-        'CHARGER_2': {
-            'PO': [True, True, False, True, False, False],
-            'HOUSE_1': [True, True, False, True, False, True, False, False],
-            'HOUSE_2': [False, False, False, True, True],
-            'HOUSE_3': [True, True, False, True, False, True, True, False, False, True],
-            'HOUSE_4': [True, True, False, True, False, True, True, True],
-            'HOUSE_5': [False, False, False, False, True],
-            'HOUSE_6': [False, False, True],
-            'HOUSE_7': [True, False],
-            'HOUSE_8': [True, True, True, False],
-            'HOUSE_9': [False, True],
-            'HOUSE_10': [True, True, True, True, True, True],
-            'CHARGER_0': [False, True, False, True, False, False, True, True],
-            'CHARGER_1': [False, False, False, True, False, True]
         },
+        
 
         'HOUSE_1': {
-            'HOUSE_2':  [True, True, False, False, True, False],
-            'HOUSE_3':  [True, False],
-            'HOUSE_4':  [False, False, True],
-            'HOUSE_5':  [True, True, False, True, False, False],
-            'HOUSE_6':  [True, True, False, False, True, True, False, False],
+            'HOUSE_2':  [True, False, False],
+            'HOUSE_3':  [True],
+            'HOUSE_4':  [False, False],
+            'HOUSE_5':  [True, False, True, False],
+            'HOUSE_6':  [True, False, False, False],
             'HOUSE_7':  [False, True, False, True, False, True, True],
             'HOUSE_8':  [False, True, False, True, False, False, False],
             'HOUSE_9':  [False, True, False, True, False, True, False, False, True],
             'HOUSE_10': [False, True, False, True, False, False, True, True, True],
-            'PO':       [False, True, True],
-            'CHARGER_0': [False, True, False, True, True],
-            'CHARGER_1': [True, True, False, False, False],
-            'CHARGER_2': [False, True, False, True, False, True, False, True]
+            'PO':       [False, True, True]
+
         },
 
         'HOUSE_2': {
@@ -89,10 +40,8 @@ directions = {
             'HOUSE_8':  [False, False, False, True, False, True, True, True],
             'HOUSE_9':  [True, False, True, False],
             'HOUSE_10': [False, False, False, True, False, False, False],
-            'PO':       [False, False, True, False, True, False, True],
-            'CHARGER_0': [False, False, True, False, True, False, False, True, True],
-            'CHARGER_1': [False, True],
-            'CHARGER_2': [True, False, True, True, False]
+            'PO':       [False, False, True, False, True, False, True]
+
         },
 
         'HOUSE_3': {
@@ -105,10 +54,8 @@ directions = {
             'HOUSE_8': [True, False, True, True, False, True, True, True],
             'HOUSE_9': [True, False, False, True, True, False, True, False],
             'HOUSE_10': [True, False, True, True, False, False, False],
-            'PO':       [True, True, True, False, True],
-            'CHARGER_0': [True, True, True, False, False, True, True],
-            'CHARGER_1': [True, False, False, False],
-            'CHARGER_2': [True, False, True, True, False]
+            'PO':       [True, True, True, False, True]
+
         },
 
         'HOUSE_4': {
@@ -121,10 +68,8 @@ directions = {
             'HOUSE_8':  [True, False, False, True, False, False, False],
             'HOUSE_9':  [False, True, False, True, True, False, True, False],
             'HOUSE_10': [False, True, True, True, False, False, False],
-            'PO':       [True, False, True],
-            'CHARGER_0': [True, False, False, True, False],
-            'CHARGER_1': [False, True, False, False],
-            'CHARGER_2': [True, False, False, True, False, True, False, True]
+            'PO':       [True, False, True]
+
         },
 
         'HOUSE_5': {
@@ -137,10 +82,8 @@ directions = {
             'HOUSE_8':  [False, False, False, True, True, True],
             'HOUSE_9':  [True, True, True, False],
             'HOUSE_10': [False, False, False, False, False],
-            'PO':       [False, False, True, True, False],
-            'CHARGER_0': [False, False, True, False, True],
-            'CHARGER_1': [False, True, True, False],      
-            'CHARGER_2': [True, True, True, True, False]
+            'PO':       [False, False, True, True, False]
+
         },
 
         'HOUSE_6': {
@@ -153,10 +96,7 @@ directions = {
             'HOUSE_8':  [False, False, False, False, False, True, True, True],
             'HOUSE_9':  [True, False],
             'HOUSE_10': [False, False, False, False, False, False, False],
-            'PO':       [False, False, False, False, True, True, False],
-            'CHARGER_0': [False, False, False, False, True, False, True],
-            'CHARGER_1': [False, True, False, True],
-            'CHARGER_2':  [True, True, False],
+            'PO':       [False, False, False, False, True, True, False]
         },
 
         'HOUSE_7': {
@@ -169,10 +109,7 @@ directions = {
             'HOUSE_8':  [True, True, False],
             'HOUSE_9':  [False, False, True],
             'HOUSE_10': [True, True, True, True, True],
-            'PO':       [True, False, True, False, False],
-            'CHARGER_0': [True, False, False],
-            'CHARGER_1': [True, False, True, False, True, True, False, True, False, False],
-            'CHARGER_2': [False, True]
+            'PO':       [True, False, True, False, False]
         },
 
         'HOUSE_8': {
@@ -185,10 +122,7 @@ directions = {
             'HOUSE_7':  [False, False, True],
             'HOUSE_9':  [False, False, False, False, True],
             'HOUSE_10': [True, True, True],
-            'PO':       [False, True, True, False, False],
-            'CHARGER_0': [False, True, False],
-            'CHARGER_1': [True, False, False, True, False, False, False],
-            'CHARGER_2': [False, False, False, True]
+            'PO':       [False, True, True, False, False]
         },
 
         'HOUSE_9': {
@@ -201,10 +135,7 @@ directions = {
             'HOUSE_7':  [True, True, False],
             'HOUSE_8':  [True, True, True, True, False],
             'HOUSE_10': [True, True, True, True, True, True, True],
-            'PO':       [True, True, True, False, True, False, False],
-            'CHARGER_0': [True, True, True, False, False],
-            'CHARGER_1': [False, False, True, False, True],
-            'CHARGER_2': [True, False],
+            'PO':       [True, True, True, False, True, False, False]
         },
 
         'HOUSE_10': {
@@ -217,10 +148,7 @@ directions = {
             'HOUSE_7':  [True, False, False, False, True],
             'HOUSE_8':  [True, False, True],
             'HOUSE_9':  [True, False, False, False, False, False, True],
-            'PO':       [False, True, False, True, False],
-            'CHARGER_0': [True, False, False, True, False],
-            'CHARGER_1': [False, True, True, False, True, False],
-            'CHARGER_2': [True, False, False, False, False, True]
+            'PO':       [False, True, False, True, False]
         }
     }
 
