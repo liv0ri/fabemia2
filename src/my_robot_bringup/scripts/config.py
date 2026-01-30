@@ -100,16 +100,16 @@ directions = {
         },
 
         'HOUSE_7': {
-            'HOUSE_1':  [True, False, True, False, True, False, False],
-            'HOUSE_2':  [False, False, False, False, True, True],
-            'HOUSE_3':  [True, False, True, False, True, True, False, False, True],
-            'HOUSE_4':  [True, False, True, False, True, True, True],
-            'HOUSE_5':  [True, False, True, True, False, True, False],
-            'HOUSE_6':  [True, False, False, True],
-            'HOUSE_8':  [True, True, False],
-            'HOUSE_9':  [False, False, True],
-            'HOUSE_10': [True, True, True, True, True],
-            'PO':       [True, False, True, False, False]
+            'HOUSE_1':  [True, False, False, False],
+            'HOUSE_2':  [False, True],
+            'HOUSE_3':  [True, False, False, True, False],
+            'HOUSE_4':  [True, False, False, True],
+            'HOUSE_5':  [True, False, True, False, True],
+            'HOUSE_6':  [False],
+            'HOUSE_8':  [True, True],
+            'HOUSE_9':  [False],
+            'HOUSE_10': [True, True, True],
+            'PO':       [True, False, False]
         },
 
         'HOUSE_8': {
