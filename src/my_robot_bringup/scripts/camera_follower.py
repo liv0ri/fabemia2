@@ -242,6 +242,7 @@ class CameraFollower(Node):
             self.current_cardinal_target = self.cardinals['NORTH']
 
         # --- COMPUTE TURN PLAN ---
+        # true or false list for right or left turns respectively
         self.turn_plan = directions[self.start][self.TARGET_HOUSE]
 
         # --- SET HOUSE COLOR ---
@@ -559,41 +560,41 @@ class CameraFollower(Node):
         # I think we need a check here for whether or not self.current_cardinal_target is actually correct
         # since the map has some corners, at which the robot would need to turn, but these turns 
         # aren't in dir dir, and not intersections
-
+        self.get_logger().info(f"Starting turn {'RIGHT' if turn_right else 'LEFT'}{' (180)' if half_turn else ''}")
         if half_turn:
             # Turn around
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi)
 
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
+            if(self.is_same_angle(self.current_cardinal_target, self.cardinals["NORTH"])):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["SOUTH"])):
                 self.current_cardinal_target = self.cardinals["NORTH"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["WEST"])):
                 self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["WEST"]
 
         elif turn_right:
             # RIGHT = Subtract 90 degrees (Clockwise in ROS)
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target - math.pi/2)
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
+            if(self.is_same_angle(self.current_cardinal_target, self.cardinals["NORTH"])):
                 self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["SOUTH"])):
                 self.current_cardinal_target = self.cardinals["WEST"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["WEST"])):
                 self.current_cardinal_target = self.cardinals["NORTH"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
         else:
             # LEFT = Add 90 degrees (Counter-Clockwise in ROS)
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi/2)
-            if(self.current_cardinal_target == self.cardinals["NORTH"]):
+            if(self.is_same_angle(self.current_cardinal_target, self.cardinals["NORTH"])):
                 self.current_cardinal_target = self.cardinals["WEST"]
-            elif(self.current_cardinal_target == self.cardinals["SOUTH"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["SOUTH"])):
                 self.current_cardinal_target = self.cardinals["EAST"]
-            elif(self.current_cardinal_target == self.cardinals["WEST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["WEST"])):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
-            elif(self.current_cardinal_target == self.cardinals["EAST"]):
+            elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["NORTH"]
                 
         self.target_yaw = self.current_cardinal_target
@@ -817,6 +818,9 @@ class CameraFollower(Node):
             self.publish_done()
 
         self.publisher.publish(self.cmd)
+
+    def is_same_angle(self,a, b, tol=0.15):
+        return abs(self.angle_error(a, b)) < tol
 
 def main():
     rclpy.init()
