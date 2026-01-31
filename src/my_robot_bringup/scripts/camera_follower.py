@@ -314,24 +314,42 @@ class CameraFollower(Node):
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-        # Check for BLACK line detection (both at intersection and normal)
-        mask = self.detect_black(hsv)
-        black_pixels = np.sum(mask > 0)
-        
-        # At intersection: need to see black line to confirm path exists
-        self.left_line = black_pixels > 100
+        # House detection logic 
+        if self.all_turns_complete:   
+            mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+
+            center = mask[:, w//2 - 80:w//2 + 80]
+            self.house_visible = np.sum(mask > 0) > 1200
+            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+        else:
+            # Check for BLACK line detection (both at intersection and normal)
+            mask_black = self.detect_black(hsv)
+            black_pixels = np.sum(mask_black > 0)
+            
+            # At intersection: need to see black line to confirm path exists
+            self.left_line = black_pixels > 100
 
     def br_callback(self, msg):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-        # Check for BLACK line detection (both at intersection and normal)
-        mask = self.detect_black(hsv)
-        black_pixels = np.sum(mask > 0)
-        
-        # At intersection: need to see black line to confirm path exists
-        self.right_line = black_pixels > 100
+        # House detection logic 
+        if self.all_turns_complete:   
+            mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+
+            center = mask[:, w//2 - 80:w//2 + 80]
+            self.house_visible = np.sum(mask > 0) > 1200
+            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+        else:
+            # Check for BLACK line detection (both at intersection and normal)
+            mask_black = self.detect_black(hsv)
+            black_pixels = np.sum(mask_black > 0)
+            
+            # At intersection: need to see black line to confirm path exists
+            self.right_line = black_pixels > 100
     
     def front_callback(self, msg):
         h, w = msg.height, msg.width
