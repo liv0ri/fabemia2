@@ -15,6 +15,7 @@ import math
 from std_msgs.msg import String
 import json
 from rclpy.qos import QoSProfile, DurabilityPolicy
+import subprocess
 
 # robots states
 class Mode(Enum):
