@@ -77,6 +77,10 @@ class CameraFollower(Node):
         self.stop_ratio = 0.95
         self.obstacle_stop_ratio = 0.70
 
+        # Cardinal placeholders (Now properly set in odom_callback)
+        self.cardinals = {}
+        self.current_cardinal_target = 0.0
+
         #self.wait_until = self.get_clock().now()
 
         # Subscriptions
@@ -134,9 +138,7 @@ class CameraFollower(Node):
         # angular.z - left/right
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 1)
 
-        # Cardinal placeholders (Now properly set in odom_callback)
-        self.cardinals = {}
-        self.current_cardinal_target = 0.0
+        
         
         qos = QoSProfile(depth=1)
         qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
@@ -240,9 +242,9 @@ class CameraFollower(Node):
         self.needToClearIntersection = False
 
         # Reset heading lock to start reference
-        if self.cardinals_initialized:
-            self.get_logger().info(f"RESETTING CARDINALS TO NORTH")
-            self.current_cardinal_target = self.cardinals['NORTH']
+        #if self.cardinals_initialized:
+        #    self.get_logger().info(f"RESETTING CARDINALS TO NORTH")
+        #    self.current_cardinal_target = self.cardinals['NORTH']
 
         # --- COMPUTE TURN PLAN ---
         # true or false list for right or left turns respectively
@@ -566,10 +568,10 @@ class CameraFollower(Node):
             self.get_logger().info(f"Initialised cardinals where start_yaw is {self.start_yaw}")
             # Facing SOUTH (~3.14), adding pi/2 (Left) should result in EAST (~ -1.57)
             self.cardinals = {
-                'SOUTH': self.normalize_angle(self.start_yaw),
-                'WEST':  self.normalize_angle(self.start_yaw - math.pi/2 ) , # Right -0.2 to maybe correct 0.2 rad diff
-                'NORTH': self.normalize_angle(self.start_yaw + math.pi),    # Behind
-                'EAST':  self.normalize_angle(self.start_yaw + math.pi/2 )  # Left
+                'NORTH': self.normalize_angle(self.start_yaw),
+                'WEST':  self.normalize_angle(self.start_yaw + math.pi/2 ) , # Right 
+                'SOUTH': self.normalize_angle(self.start_yaw + math.pi),    # Behind
+                'EAST':  self.normalize_angle(self.start_yaw - math.pi/2 )  # Left
             }
             self.current_cardinal_target = self.cardinals['SOUTH']
             self.cardinals_initialized = True
@@ -630,7 +632,6 @@ class CameraFollower(Node):
         if half_turn:
             # Turn around
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi)
-
             if(self.is_same_angle(self.current_cardinal_target, self.cardinals["NORTH"])):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
             elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["SOUTH"])):
@@ -639,7 +640,9 @@ class CameraFollower(Node):
                 self.current_cardinal_target = self.cardinals["EAST"]
             elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["WEST"]
-
+            else:
+                self.get_logger().info("FAILED TO FIND AN ANGLE TO TURN TO")
+            
         elif turn_right:
             # RIGHT = Subtract 90 degrees (Clockwise in ROS)
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target - math.pi/2)
@@ -651,6 +654,10 @@ class CameraFollower(Node):
                 self.current_cardinal_target = self.cardinals["NORTH"]
             elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
+            else:
+                self.get_logger().info("FAILED TO FIND AN ANGLE TO TURN TO")
+            
+
         else:
             # LEFT = Add 90 degrees (Counter-Clockwise in ROS)
             #self.current_cardinal_target = self.normalize_angle(self.current_cardinal_target + math.pi/2)
@@ -662,7 +669,9 @@ class CameraFollower(Node):
                 self.current_cardinal_target = self.cardinals["SOUTH"]
             elif(self.is_same_angle(self.current_cardinal_target, self.cardinals["EAST"])):
                 self.current_cardinal_target = self.cardinals["NORTH"]
-                
+            else:
+                self.get_logger().info("FAILED TO FIND AN ANGLE TO TURN TO")  
+
         self.target_yaw = self.current_cardinal_target
 
     def control_loop(self):
@@ -744,12 +753,17 @@ class CameraFollower(Node):
                     # Step 1: Initiate alignment to cardinal direction
                     if not self.aligning_at_intersection:
                         self.get_logger().info(f"Intersection detected! Magenta ratio: {self.front_magenta_ratio:.2f}")
-                        self.get_logger().info(f"Starting cardinal alignment to {self.current_cardinal_target:.2f} rad")
                         
-                        # Stop completely
-                        self.cmd.linear.x = 0.0
-                        self.cmd.angular.z = 0.0
-                        self.publisher.publish(self.cmd)
+                        if not self.is_same_angle(self.current_cardinal_target, self.current_yaw):
+                        
+                            self.get_logger().info(f"Starting cardinal alignment to {self.current_cardinal_target:.2f} rad")
+                            
+                            # Stop completely
+                            self.cmd.linear.x = 0.0
+                            self.cmd.angular.z = 0.0
+                            self.publisher.publish(self.cmd)
+
+                            
                         
                         # Set flag to start alignment
                         self.aligning_at_intersection = True
@@ -815,10 +829,12 @@ class CameraFollower(Node):
                     self.publisher.publish(self.cmd)
                     self.cmd.linear.x = 0.0
                 
+                    """
                     # Calculate shortest angular distance to target
                     error = self.angle_error(self.target_yaw, self.current_yaw)
                     
                     if(abs(error) >= 1.53): #88 degrees, the robot must have turned at some point
+                        self.get_logger().info("corner detected - updating cardinal target")
                         closestCardinal = self.current_cardinal_target
                         for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
                             if self.angle_error(self.cardinals[c], self.current_yaw) < error :
@@ -826,6 +842,7 @@ class CameraFollower(Node):
 
                         self.current_cardinal_target = closestCardinal
                         self.target_yaw = closestCardinal
+                    """
 
                 else:
                     # if self.at_intersection and self.needToClearIntersection and not self.f_line_found:
