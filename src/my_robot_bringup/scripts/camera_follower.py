@@ -333,7 +333,11 @@ class CameraFollower(Node):
 
             center = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible = np.sum(mask > 0) > 1200
-            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
+            if (np.sum(center > 0) / center.size) > self.stop_ratio and not self.doing_turn:
+                self.get_logger().info("Found house on left side, turning...")
+                self.start_turn(False)
+
         else:
             # Check for BLACK line detection (both at intersection and normal)
             mask_black = self.detect_black(hsv)
@@ -354,7 +358,11 @@ class CameraFollower(Node):
 
             center = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible = np.sum(mask > 0) > 1200
-            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio
+
+            if (np.sum(center > 0) / center.size) > self.stop_ratio and not self.doing_turn:
+                self.get_logger().info("Found house on right side, turning...")
+                self.start_turn(True)
+            
         else:
             # Check for BLACK line detection (both at intersection and normal)
             mask_black = self.detect_black(hsv)
@@ -515,7 +523,8 @@ class CameraFollower(Node):
             # self.get_logger().info(f"House center ratio: {np.sum(center > 0) / center.size:.3f}")
             self.house_visible = np.sum(mask > 0) > 1200
             self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio     
-            # self.get_logger().info(f"House visible: {self.house_visible}, House reached ratio: {np.sum(center > 0) / center.size:.3f}")   
+            # self.get_logger().info(f"House visible: {self.house_visible}, House reached ratio: {np.sum(center > 0) / center.size:.3f}")
+
 
     def remove_box(self):
         if not self.box_spawned:
@@ -691,16 +700,6 @@ class CameraFollower(Node):
                 # Calculate shortest angular distance to target
                 error = self.angle_error(self.target_yaw, self.current_yaw)
 
-                """
-                if(abs(error) >= 1.396263): #80 degrees, the robot must have turned at some point
-                    closestCardinal = self.current_cardinal_target
-                    for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
-                        if self.angle_error(self.cardinals[c], self.current_yaw) < error :
-                            closestCardinal = self.cardinals[c]
-
-                    self.current_cardinal_target = closestCardinal
-                    self.target_yaw = closestCardinal
-                """
                 ANGULAR = self.kp * error
                 
                 # Minimum rotation speed to overcome friction
@@ -814,6 +813,19 @@ class CameraFollower(Node):
                     self.cmd.linear.x = linear
                     self.cmd.angular.z = angular
                     self.publisher.publish(self.cmd)
+                    self.cmd.linear.x = 0.0
+                
+                    # Calculate shortest angular distance to target
+                    error = self.angle_error(self.target_yaw, self.current_yaw)
+                    
+                    if(abs(error) >= 1.53): #88 degrees, the robot must have turned at some point
+                        closestCardinal = self.current_cardinal_target
+                        for c in ["NORTH", "SOUTH", "EAST", "WEST"]:
+                            if self.angle_error(self.cardinals[c], self.current_yaw) < error :
+                                closestCardinal = self.cardinals[c]
+
+                        self.current_cardinal_target = closestCardinal
+                        self.target_yaw = closestCardinal
 
                 else:
                     # if self.at_intersection and self.needToClearIntersection and not self.f_line_found:
@@ -852,16 +864,55 @@ class CameraFollower(Node):
                 self.house_seen_frames = 0
 
         elif self.mode == Mode.VERIFY_HOUSE:
-            # Approach house slowly
-            if self.f_line_found:
-                linear, angular = self.calculate_line_following_command(0.08)
-                self.cmd.linear.x = linear
-                self.cmd.angular.z = angular
+            
+            if self.doing_turn:
+                self.cmd.linear.x = 0.0
+                
+                # Calculate shortest angular distance to target
+                error = self.angle_error(self.target_yaw, self.current_yaw)
+                ANGULAR = self.kp * error
+                
+                # Minimum rotation speed to overcome friction
+                if ANGULAR > 0:
+                    self.cmd.angular.z = max(ANGULAR, 0.15)
+                else:
+                    self.cmd.angular.z = min(ANGULAR, -0.15)
+
+                # Check if turn is complete
+                if abs(error) < 0.05:
+                    self.cmd.angular.z = 0.0
+                    self.cmd.linear.x = 0.0
+                    self.doing_turn = False
+                    self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
+                                
+                self.publisher.publish(self.cmd)
 
             # Stop when close enough
-            if self.house_reached:
+            elif self.house_reached:
                 self.mode = Mode.STOP
                 self.get_logger().info("House reached - STOPPING")
+            else:
+                # Approach house slowly
+                if self.f_line_found:
+                    linear, angular = self.calculate_line_following_command(0.08)
+                    self.cmd.linear.x = linear
+                    self.cmd.angular.z = angular
+                else:
+                    #Lost line - recovery mode
+                    self.sum_line_error = 0.0
+                    self.cmd.linear.x = 0.0
+                        
+                    # Spin in direction of last known error
+
+                    spin_speed = 0.3
+                        
+                    if self.last_line_error > 0:
+                        self.cmd.angular.z = -spin_speed  # Turn right
+                    else:
+                        self.cmd.angular.z = spin_speed   # Turn left
+                        
+                    self.get_logger().debug("Line lost - recovering...")
+
 
         elif self.mode == Mode.STOP:
             self.cmd.linear.x = 0.0
