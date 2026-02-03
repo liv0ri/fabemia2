@@ -348,8 +348,6 @@ class CameraFollower(Node):
                 self.get_logger().info("Intersection cleared")
             self.at_intersection = False
 
-
-    
     # check if enough pixels is found in any side camera
     # help to detect which side to move
     def bl_callback(self, msg):
@@ -371,7 +369,7 @@ class CameraFollower(Node):
                 self.start_turn(False)
 
         else:
-            # Check for BLACK line detection (both at intersection and normal)
+            # Check for BLACK line detection - both at intersection and normal
             mask_black = self.detect_black(hsv)
             black_pixels = np.sum(mask_black > 0)
             
@@ -397,7 +395,7 @@ class CameraFollower(Node):
                 self.start_turn(True)
             
         else:
-            # Check for BLACK line detection (both at intersection and normal)
+            # Check for BLACK line detection - both at intersection and normal
             mask_black = self.detect_black(hsv)
             black_pixels = np.sum(mask_black > 0)
             
@@ -408,28 +406,28 @@ class CameraFollower(Node):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
         
-        # NEW: At intersection, check for forward line alignment
+        # At intersection, check for forward line alignment
         if self.at_intersection:
             self.forward_line_error, self.forward_line_found = self.get_forward_line_alignment(img, h, w)
         
-        # NEW: Check for magenta in BOTTOM portion of front camera (approaching intersection)
+        # Check for magenta in BOTTOM portion of front camera - approaching intersection
         # Only look at bottom 30% of the frame
         roi_start = int(h * 0.85)  # Start from 85% down
         img_roi = img[roi_start:h, :]
         magenta_ratio_roi = self.detect_magenta_ratio(img_roi)
         
-        # If we see magenta in bottom of front camera (approaching intersection)
+        # If we see magenta in bottom of front camera - approaching intersection
         if (magenta_ratio_roi > 0.30) or (not self.needToClearIntersection and not self.at_intersection and self.approaching_intersection):  
             # 80% threshold in the ROI - we don't want it locking too early, because it may be misaligned. 
             # OR:
-            #keep perpetuating this value until we either have cleared the intersection (entered go straight at intersection)
-            #  or if we're at the intersection (and we're gonna handle that)
+            # keep perpetuating this value until we either have cleared the intersection - entered go straight at intersection
+            # or if we're at the intersection
             self.approaching_intersection = True
             self.get_logger().info(f"Approaching intersection")
             
             self.f_line_found = False
 
-            # 2. Check for black line in TOP MIDDLE (to see if path continues forward)
+            # 2. Check for black line in TOP MIDDLE to see if path continues forward
             top_limit = int(h * 0.50)
             left_limit = int(w * 0.30)
             right_limit = int(w * 0.70)
@@ -450,7 +448,7 @@ class CameraFollower(Node):
             self.approaching_intersection = False
 
         
-        # ORIGINAL: Line following logic (unchanged)
+        # Line following logic 
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         
         # 1. Scan the bottom area
@@ -458,7 +456,7 @@ class CameraFollower(Node):
         row_data = gray[scan_row, :]
         _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # NEW: Detect and reject horizontal/perpendicular lines
+        # Detect and reject horizontal/perpendicular lines
         # A horizontal line will have black pixels spanning most of the width
         total_black_pixels = np.sum(thresh == 255)
         horizontal_line_detected = total_black_pixels > (w * 0.3)  # If >30% of width is black
@@ -466,7 +464,7 @@ class CameraFollower(Node):
         if horizontal_line_detected:
             # This is likely a perpendicular T-junction line, ignore it completely
             # Instead, look higher up in the image where only the forward line exists
-            scan_row = int(h * 0.7)  # Look much higher
+            scan_row = int(h * 0.7)  
             row_data = gray[scan_row, :]
             _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
@@ -497,7 +495,7 @@ class CameraFollower(Node):
             if M["m00"] > 0:
                 target_cx = (M["m10"] / M["m00"]) + m_start
         
-            # Only check sides if MIDDLE is NOT found
+        # Only check sides if MIDDLE is NOT found
         elif segment_density['LEFT'] and segment_density['RIGHT']:
             # Both sides visible - use weighted average
             M_left = cv2.moments(segments['LEFT'])
@@ -560,7 +558,7 @@ class CameraFollower(Node):
             # self.get_logger().info(f"House centre ratio: {np.sum(centre > 0) / centre.size:.3f}")
             self.house_visible_front = np.sum(mask > 0) > 1200
             
-            # Overall visibility is if ANY camera sees it
+            # Overall visibility is if any camera sees it
             self.house_visible = self.house_visible_front or self.house_visible_left or self.house_visible_right
             
             self.house_reached = (np.sum(centre > 0) / centre.size) > self.stop_ratio     
@@ -784,7 +782,7 @@ class CameraFollower(Node):
                     self.get_logger().info("Approaching intersection - moving slowly")
                     return
                 
-                #need to do turn?
+                # need to do turn?
                 # NEW: Intersection detection using MAGENTA from middle camera
                 # Detect intersection and execute turn
                 if self.at_intersection and not self.all_turns_complete and not self.needToClearIntersection:
@@ -904,7 +902,6 @@ class CameraFollower(Node):
                     self.cmd.linear.x = 0.0
                     
                     # Spin in direction of last known error
-
                     spin_speed = 0.3
                     if self.last_line_error > 0:
                         self.cmd.angular.z = -spin_speed  # Turn right
@@ -966,7 +963,7 @@ class CameraFollower(Node):
             else:
             
                 if (self.house_visible_right or self.house_visible_left) and not self.house_visible_front and not self.house_reached:
-                    # Only correct if we're NOT super close
+                    # Only correct if we're not super close
                     # This prevents correction when very close
                     
                     if not self.correcting_to_house:
@@ -996,7 +993,6 @@ class CameraFollower(Node):
                     self.cmd.linear.x = 0.0
                         
                     # Spin in direction of last known error
-
                     spin_speed = 0.3
                         
                     if self.last_line_error > 0:
