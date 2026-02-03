@@ -45,8 +45,8 @@ class CameraFollower(Node):
         self.cardinals_initialized = False 
 
         self.kp = 0.6
-        self.ki = 0.0
-        self.kd = 0.1
+        self.ki = 0.01
+        self.kd = 0.4
 
         # Offset from centre
         self.was_line_lost = False
@@ -334,7 +334,7 @@ class CameraFollower(Node):
         self.front_magenta_ratio = magenta_ratio
         
         # Robot is ON intersection when bottom-middle sees significant magenta
-        if magenta_ratio > 0.60:  # More than 60% of image is magenta (robot centre is ON the tile)
+        if magenta_ratio > 0.50:  # More than 50% of image is magenta (robot centre is ON the tile)
             self.at_intersection = True
         else:
             if(self.at_intersection and self.needToClearIntersection):
@@ -825,15 +825,13 @@ class CameraFollower(Node):
                                 elif self.front_line:
                                     self.get_logger().info("Intended turn path blocked, continuing straight")
                                     self.turn_plan +=1
-                                    if self.turn_index >= len(self.turn_plan):
-                                        self.all_turns_complete = True
-                                        self.get_logger().info("All turns complete - searching for house")
                                 else:
                                     self.get_logger().warn("No valid path detected at intersection!")
-                                    self.turn_plan +=1
-                                    if self.turn_index >= len(self.turn_plan):
-                                        self.all_turns_complete = True
-                                        self.get_logger().info("All turns complete - searching for house")
+                                    
+                                self.turn_plan +=1
+                                if self.turn_index >= len(self.turn_plan):
+                                    self.all_turns_complete = True
+                                    self.get_logger().info("All turns complete - searching for house")
                             else:
                                 # Continue aligning
                                 self.cmd.linear.x = 0.0
@@ -856,10 +854,18 @@ class CameraFollower(Node):
                                 self.start_turn(self.turn_plan[self.turn_index])
                             elif self.front_line:
                                 self.get_logger().info("Intended turn path blocked, continuing straight")
+                                self.turn_index +=1
+                                self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
+                                if self.turn_index >= len(self.turn_plan):
+                                    self.all_turns_complete = True
+                                    self.get_logger().info("All turns complete - searching for house")
                             else:
                                 self.get_logger().warn("No valid path detected at intersection!")
-                            self.turn_index +=1
-                            self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
+                                self.turn_index +=1
+                                self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
+                                if self.turn_index >= len(self.turn_plan):
+                                    self.all_turns_complete = True
+                                    self.get_logger().info("All turns complete - searching for house")
                         self.publisher.publish(self.cmd)
                         return
 
