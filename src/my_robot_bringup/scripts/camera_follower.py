@@ -83,7 +83,7 @@ class CameraFollower(Node):
         # Correction mode when house is on side but not front
         self.correcting_to_house = False
 
-        # Stop distance proxy image-based - when house fills 25% of center
+        # Stop distance proxy image-based - when house fills 95% of centre
         # Fine tuned based on experiement with house 2
         self.stop_ratio = 0.95
         self.obstacle_stop_ratio = 0.70
@@ -315,14 +315,14 @@ class CameraFollower(Node):
         # Detect black line
         mask_black = self.detect_black(hsv)
         
-        # Find horizontal center of black pixels
+        # Find horizontal centre of black pixels
         black_pixels = np.where(mask_black > 0)
         
         if len(black_pixels[1]) > 50:  # Enough pixels to be reliable
             # Calculate centroid
             cx = np.mean(black_pixels[1])
             
-            # Calculate error from image center
+            # Calculate error from image centre
             error = (cx - w/2) / (w/2)
             
             return error, True  # error, line_found
@@ -334,12 +334,12 @@ class CameraFollower(Node):
         h, w = msg.height, msg.width
         img = np.frombuffer(msg.data, np.uint8).reshape(h, w, 3)
 
-        # NEW: Check if robot CENTER is over magenta (intersection confirmation)
+        # NEW: Check if robot CENTRE is over magenta (intersection confirmation)
         magenta_ratio = self.detect_magenta_ratio(img)
         self.front_magenta_ratio = magenta_ratio
         
         # Robot is ON intersection when bottom-middle sees significant magenta
-        if magenta_ratio > 0.60:  # More than 60% of image is magenta (robot center is ON the tile)
+        if magenta_ratio > 0.60:  # More than 60% of image is magenta (robot centre is ON the tile)
             self.at_intersection = True
         else:
             if(self.at_intersection and self.needToClearIntersection):
@@ -361,11 +361,11 @@ class CameraFollower(Node):
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
-            center = mask[:, w//2 - 80:w//2 + 80]
+            centre = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible_left = np.sum(mask > 0) > 1200
             self.house_visible = self.house_visible or self.house_visible_left
 
-            if (np.sum(center > 0) / center.size) > self.side_stop_ratio and not self.doing_turn:
+            if (np.sum(centre > 0) / centre.size) > self.side_stop_ratio and not self.doing_turn:
                 self.get_logger().info("Found house on left side, turning...")
                 self.start_turn(False)
 
@@ -387,11 +387,11 @@ class CameraFollower(Node):
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
-            center = mask[:, w//2 - 80:w//2 + 80]
+            centre = mask[:, w//2 - 80:w//2 + 80]
             self.house_visible_right = np.sum(mask > 0) > 1200
             self.house_visible = self.house_visible or self.house_visible_right
 
-            if (np.sum(center > 0) / center.size) > self.side_stop_ratio and not self.doing_turn:
+            if (np.sum(centre > 0) / centre.size) > self.side_stop_ratio and not self.doing_turn:
                 self.get_logger().info("Found house on right side, turning...")
                 self.start_turn(True)
             
@@ -543,9 +543,9 @@ class CameraFollower(Node):
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
             # self.get_logger().info(f"Obstacle pixels detected: {np.sum(mask > 0)}")
 
-            center = mask[:, w//2 - 80:w//2 + 80]
-            # self.get_logger().info(f"Obstacle center ratio: {np.sum(center > 0) / center.size:.3f}")
-            self.obstacle_detected = (np.sum(center > 0) / center.size) > self.obstacle_stop_ratio
+            centre = mask[:, w//2 - 80:w//2 + 80]
+            # self.get_logger().info(f"Obstacle centre ratio: {np.sum(centre > 0) / centre.size:.3f}")
+            self.obstacle_detected = (np.sum(centre > 0) / centre.size) > self.obstacle_stop_ratio
             if self.obstacle_detected and self.obstacle_stop_start is None:
                 self.get_logger().info("Obstacle detected - stopping for 20s")
                 self.obstacle_stop_start = self.get_clock().now()
@@ -555,15 +555,15 @@ class CameraFollower(Node):
             mask = cv2.inRange(hsv, np.array(self.lower), np.array(self.upper))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
-            center = mask[:, w//2 - 80:w//2 + 80]
-            # self.get_logger().info(f"House center ratio: {np.sum(center > 0) / center.size:.3f}")
+            centre = mask[:, w//2 - 80:w//2 + 80]
+            # self.get_logger().info(f"House centre ratio: {np.sum(centre > 0) / centre.size:.3f}")
             self.house_visible_front = np.sum(mask > 0) > 1200
             
             # Overall visibility is if ANY camera sees it
             self.house_visible = self.house_visible_front or self.house_visible_left or self.house_visible_right
             
-            self.house_reached = (np.sum(center > 0) / center.size) > self.stop_ratio     
-            # self.get_logger().info(f"House visible: {self.house_visible}, House reached ratio: {np.sum(center > 0) / center.size:.3f}")
+            self.house_reached = (np.sum(centre > 0) / centre.size) > self.stop_ratio     
+            # self.get_logger().info(f"House visible: {self.house_visible}, House reached ratio: {np.sum(centre > 0) / centre.size:.3f}")
 
 
     def remove_box(self):
@@ -805,7 +805,7 @@ class CameraFollower(Node):
                     elif self.aligning_at_intersection:
                         # Use forward line to align if visible
                         if self.forward_line_found:
-                            # PID control to center on forward line
+                            # PID control to centre on forward line
                             angular = self.kp * self.forward_line_error
                             
                             if abs(self.forward_line_error) < 0.05:  # Aligned!
