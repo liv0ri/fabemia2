@@ -141,8 +141,6 @@ class CameraFollower(Node):
         # linear.x - forward/backward
         # angular.z - left/right
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 1)
-
-        
         
         qos = QoSProfile(depth=1)
         qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
