@@ -954,6 +954,7 @@ class CameraFollower(Node):
             # Stop when close enough
             elif self.house_reached:
                 self.mode = Mode.STOP
+                self.house_reached = False
                 self.get_logger().info("House reached - STOPPING")
             
             # Check if we need to correct alignment - house on side but not front
@@ -1010,6 +1011,7 @@ class CameraFollower(Node):
             self.publisher.publish(self.cmd)
 
             self.navigation_active = False
+            self.mode == Mode.FOLLOW_LINE
             self.get_logger().info("Navigation complete")
             self.publish_done()
 
