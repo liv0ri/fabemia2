@@ -807,20 +807,23 @@ class CameraFollower(Node):
                                 self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
                                 
                                 self.needToClearIntersection = True
-                                self.turn_plan +=1
+                                
                                 # Initiate turn based on turn plan
-                                turn_direction = "RIGHT" if self.turn_plan[self.turn_index - 1] else "LEFT"
-                                self.get_logger().info(f"Executing turn {self.turn_index }: {turn_direction}")
+                                turn_direction = "RIGHT" if self.turn_plan[self.turn_index] else "LEFT"
+                                self.get_logger().info(f"Executing turn {self.turn_index +1}: {turn_direction}")
 
                                 # Logic: only execute turn if the path exists
                                 if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
                                     self.start_turn(self.turn_plan[self.turn_index])
                                     self.publisher.publish(self.cmd)
+                                    self.turn_plan +=1
                                     return
                                 elif self.front_line:
                                     self.get_logger().info("Intended turn path blocked, continuing straight")
+                                    self.turn_plan +=1
                                 else:
                                     self.get_logger().warn("No valid path detected at intersection!")
+                                    self.turn_plan +=1
                             else:
                                 # Continue aligning
                                 self.cmd.linear.x = 0.0
@@ -835,9 +838,9 @@ class CameraFollower(Node):
                             self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
                             self.needToClearIntersection = True
 
-                            self.turn_index +=1
-                            turn_direction = "RIGHT" if self.turn_plan[self.turn_index - 1] else "LEFT"
-                            self.get_logger().info(f"Executing turn {self.turn_index }: {turn_direction}")
+                            
+                            turn_direction = "RIGHT" if self.turn_plan[self.turn_index ] else "LEFT"
+                            self.get_logger().info(f"Executing turn {self.turn_index+1 }: {turn_direction}")
                             
                             if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
                                 self.start_turn(self.turn_plan[self.turn_index])
@@ -845,7 +848,7 @@ class CameraFollower(Node):
                                 self.get_logger().info("Intended turn path blocked, continuing straight")
                             else:
                                 self.get_logger().warn("No valid path detected at intersection!")
-                        
+                            self.turn_index +=1
                         self.publisher.publish(self.cmd)
                         return
 
