@@ -807,10 +807,10 @@ class CameraFollower(Node):
                                 self.get_logger().info(f"Path availability - Left: {self.left_line}, Right: {self.right_line}, Front: {self.front_line}")
                                 
                                 self.needToClearIntersection = True
-                                
+                                self.turn_plan +=1
                                 # Initiate turn based on turn plan
                                 turn_direction = "RIGHT" if self.turn_plan[self.turn_index] else "LEFT"
-                                self.get_logger().info(f"Executing turn {self.turn_index + 1}: {turn_direction}")
+                                self.get_logger().info(f"Executing turn {self.turn_index }: {turn_direction}")
 
                                 # Logic: only execute turn if the path exists
                                 if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
