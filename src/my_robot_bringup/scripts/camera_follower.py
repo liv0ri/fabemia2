@@ -817,13 +817,23 @@ class CameraFollower(Node):
                                     self.start_turn(self.turn_plan[self.turn_index])
                                     self.publisher.publish(self.cmd)
                                     self.turn_plan +=1
+                                    # Check if all turns are done
+                                    if self.turn_index >= len(self.turn_plan):
+                                        self.all_turns_complete = True
+                                        self.get_logger().info("All turns complete - searching for house")
                                     return
                                 elif self.front_line:
                                     self.get_logger().info("Intended turn path blocked, continuing straight")
                                     self.turn_plan +=1
+                                    if self.turn_index >= len(self.turn_plan):
+                                        self.all_turns_complete = True
+                                        self.get_logger().info("All turns complete - searching for house")
                                 else:
                                     self.get_logger().warn("No valid path detected at intersection!")
                                     self.turn_plan +=1
+                                    if self.turn_index >= len(self.turn_plan):
+                                        self.all_turns_complete = True
+                                        self.get_logger().info("All turns complete - searching for house")
                             else:
                                 # Continue aligning
                                 self.cmd.linear.x = 0.0
@@ -849,6 +859,9 @@ class CameraFollower(Node):
                             else:
                                 self.get_logger().warn("No valid path detected at intersection!")
                             self.turn_index +=1
+                            if self.turn_index >= len(self.turn_plan):
+                                self.all_turns_complete = True
+                                self.get_logger().info("All turns complete - searching for house")
                         self.publisher.publish(self.cmd)
                         return
 
