@@ -826,11 +826,11 @@ class CameraFollower(Node):
                                     return
                                 elif self.front_line:
                                     self.get_logger().info("Intended turn path blocked, continuing straight")
-                                    self.turn_plan +=1
+                                    self.turn_index +=1
                                 else:
                                     self.get_logger().warn("No valid path detected at intersection!")
                                     
-                                self.turn_plan +=1
+                                self.turn_index +=1
                                 if self.turn_index >= len(self.turn_plan):
                                     self.all_turns_complete = True
                                     self.get_logger().info("All turns complete - searching for house")
@@ -949,7 +949,7 @@ class CameraFollower(Node):
             
             # Check if we need to correct alignment - house on side but not front
             elif self.house_visible_front:
-                self.cmd.linear.x = 1.0
+                self.cmd.linear.x = 0.7
                 self.cmd.angular.z = 0.0
             else:
             
