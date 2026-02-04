@@ -341,7 +341,7 @@
           </geometry>
           <material>
             <ambient>0.300000012 0.300000012 0.300000012 1</ambient>
-            <diffuse>1 0 0.898000002 1</diffuse>
+            <diffuse>0 0.172999993 1 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
         </visual>
@@ -670,7 +670,7 @@
           </geometry>
           <material>
             <ambient>0.300000012 0.300000012 0.300000012 1</ambient>
-            <diffuse>0 0.172999993 1 1</diffuse>
+            <diffuse>0 1 0 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
         </visual>

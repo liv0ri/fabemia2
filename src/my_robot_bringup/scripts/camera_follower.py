@@ -155,7 +155,7 @@ class CameraFollower(Node):
         self.control_timer = self.create_timer(0.05, self.control_loop)
         # Exact RGB colors from Gazebo diffuse values
         colors = {
-            "HOUSE_1": (255, 0, 229),
+            "HOUSE_1": (0, 44, 255),
             "HOUSE_2": (253, 255, 0),
             "HOUSE_3": (255, 161, 0),
             "HOUSE_4": (252, 149, 209),
@@ -163,7 +163,7 @@ class CameraFollower(Node):
             "HOUSE_6": (0, 251, 255),
             "HOUSE_7": (97, 63, 0),
             "HOUSE_8": (120, 0, 255),
-            "HOUSE_9": (0, 44, 255),
+            "HOUSE_9": (0, 255, 0),
             "HOUSE_10": (146, 220, 255),
             "PO": (255, 255, 255),
         }
@@ -184,8 +184,11 @@ class CameraFollower(Node):
             elif name == "HOUSE_8":
                 lower = (135, 40, 40)
                 upper = (165, 255, 255)
-            elif name == "HOUSE_9":
+            elif name == "HOUSE_1":
                 lower = (95, 40, 40)
+                upper = (135, 255, 255)
+            elif name == "HOUSE_9":
+                lower = (80, 50, 100)
                 upper = (135, 255, 255)
             else:
                 lower = (max(h - 6, 0), 60, 40)
@@ -965,20 +968,20 @@ class CameraFollower(Node):
                 self.cmd.angular.z = 0.0
             else:
             
-                if (self.house_visible_right or self.house_visible_left) and not self.house_visible_front and not self.house_reached:
-                    # Only correct if we're not super close
-                    # This prevents correction when very close
-                    if not self.correcting_to_house:
-                        self.get_logger().info(f"House on side but not front - correcting alignment. Right: {self.house_visible_right}, Left: {self.house_visible_left}")
-                        self.correcting_to_house = True
+                # if (self.house_visible_right or self.house_visible_left) and not self.house_visible_front and not self.house_reached:
+                #     # Only correct if we're not super close
+                #     # This prevents correction when very close
+                #     if not self.correcting_to_house:
+                #         self.get_logger().info(f"House on side but not front - correcting alignment. Right: {self.house_visible_right}, Left: {self.house_visible_left}")
+                #         self.correcting_to_house = True
                     
-                    # Slow rotation toward the house
-                    self.cmd.linear.x = 0.0
+                #     # Slow rotation toward the house
+                #     self.cmd.linear.x = 0.0
                     
-                    if self.house_visible_right:
-                        self.cmd.angular.z = -0.2  # Turn right slowly
-                    else:  # house_visible_left
-                        self.cmd.angular.z = 0.2   # Turn left slowly
+                #     if self.house_visible_right:
+                #         self.cmd.angular.z = -0.2  # Turn right slowly
+                #     else:  # house_visible_left
+                #         self.cmd.angular.z = 0.2   # Turn left slowly
                     
             
                 # Normal approach - house is in front or correction complete
