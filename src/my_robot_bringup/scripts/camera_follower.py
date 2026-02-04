@@ -641,7 +641,7 @@ class CameraFollower(Node):
         self.last_line_error = self.line_error
         
         # Cap the output
-        angular = max(min(angular, 0.35), -0.35)
+        #angular = max(min(angular, 0.35), -0.35)
         
         return base_speed, angular
     
