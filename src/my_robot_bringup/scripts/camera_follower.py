@@ -828,6 +828,7 @@ class CameraFollower(Node):
                                     self.get_logger().info("Intended turn path blocked, continuing straight")
                                     self.turn_index +=1
                                 else:
+                                    self.uncertainty_cardinality = True
                                     self.get_logger().warn("No valid path detected at intersection!")
                                     
                                 self.turn_index +=1
@@ -855,6 +856,7 @@ class CameraFollower(Node):
                             if (self.turn_plan[self.turn_index] and self.right_line) or (not self.turn_plan[self.turn_index] and self.left_line):
                                 self.start_turn(self.turn_plan[self.turn_index])
                             elif self.front_line:
+                                #likely to take the path in front of it; but in reality it will just find the first path it finds
                                 self.get_logger().info("Intended turn path blocked, continuing straight")
                                 self.turn_index +=1
                                 self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
@@ -862,6 +864,9 @@ class CameraFollower(Node):
                                     self.all_turns_complete = True
                                     self.get_logger().info("All turns complete - searching for house")
                             else:
+                                #will just look for the first path it finds
+                                #we don't know how it will turn here, so maybe missing cardinality check
+                                self.uncertainty_cardinality = True
                                 self.get_logger().warn("No valid path detected at intersection!")
                                 self.turn_index +=1
                                 self.get_logger().info(f"Turn {self.turn_index}/{len(self.turn_plan)} complete")
@@ -879,6 +884,25 @@ class CameraFollower(Node):
                         self.last_line_error = 0.0
                         self.heading_ref = None
                         self.was_line_lost = False
+
+                        if self.uncertainty_cardinality:
+                            self.uncertainty_cardinality = False
+
+                            if (0 < self.current_yaw <= math.pi / 4) or( 0 >= self.current_yaw > -math.pi / 4) :
+                                #facing north
+                                self.current_cardinal_target = "NORTH"
+                            elif -3 * math.pi / 4 < self.current_yaw <= - math.pi / 4:
+                                #facing east
+                                self.current_cardinal_target = "EAST"
+                            elif (- math.pi < self.current_yaw <= - 3 * math.pi / 4) or (math.pi >= self.current_yaw > 3 * math.pi / 4):
+                                #facing south
+                                self.current_cardinal_target = "SOUTH"
+                            elif 3 * math.pi / 4 >= self.current_yaw > math.pi / 4:
+                                #facing west
+                                self.current_cardinal_target = "WEST"
+                            else:
+                                self.get_logger.info("could not eliminate uncertainty in cardinality")
+                            self.target_yaw = self.current_cardinal_target
 
                     linear, angular = self.calculate_line_following_command(0.15)  # Normal speed
                     
