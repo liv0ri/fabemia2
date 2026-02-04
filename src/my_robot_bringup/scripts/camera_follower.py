@@ -409,6 +409,20 @@ class CameraFollower(Node):
         roi_start = int(h * 0.85)  # Start from 85% down
         img_roi = img[roi_start:h, :]
         magenta_ratio_roi = self.detect_magenta_ratio(img_roi)
+
+
+        if self.aligning_at_intersection:
+            #keep this updated so we make sure the readings are correct
+            # Crop the HSV image to this top-middle box
+            hsv_top_middle = img[:, :]
+            
+            # Detect black in this specific ROI
+            mask_black_ahead = self.detect_black(hsv_top_middle)
+            black_pixels_ahead = np.sum(mask_black_ahead > 0)
+            
+            # If enough black pixels are found ahead, mark front_line as valid
+            self.front_line = black_pixels_ahead > 100
+
         
         # If we see magenta in bottom of front camera - approaching intersection
         if (magenta_ratio_roi > 0.30) and (not self.needToClearIntersection and not self.at_intersection):  
@@ -433,87 +447,87 @@ class CameraFollower(Node):
         else:
             self.approaching_intersection = False
 
-        
-        # Line following logic 
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        
-        # 1. Scan the bottom area
-        scan_row = int(h * 0.9)
-        row_data = gray[scan_row, :]
-        _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
-
-        # Detect and reject horizontal/perpendicular lines
-        # A horizontal line will have black pixels spanning most of the width
-        total_black_pixels = np.sum(thresh == 255)
-        horizontal_line_detected = total_black_pixels > (w * 0.3)  # If >30% of width is black
-        
-        if horizontal_line_detected:
-            # This is likely a perpendicular T-junction line, ignore it completely
-            # Instead, look higher up in the image where only the forward line exists
-            scan_row = int(h * 0.7)  
+        if self.needToClearIntersection or not self.at_intersection and not self.approaching_intersection:
+            # Line following logic 
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            
+            # 1. Scan the bottom area
+            scan_row = int(h * 0.9)
             row_data = gray[scan_row, :]
             _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # 2. Define Custom Segment Boundaries
-        m_start = int((w/2) - ((1/10) * w) / 2)
-        m_end = int((w/2) + ((1/10) * w) / 2)
-
-        segments = {
-            'LEFT':   thresh[0 : m_start],
-            'MIDDLE': thresh[m_start : m_end],
-            'RIGHT':  thresh[m_end : w]
-        }
-
-        # 3. Check which segments have a line
-        sides = m_start * 1/4
-        middle = (m_end - m_start) * 3/4
-        segment_density = {
-            'LEFT':   np.sum(segments['LEFT'] == 255) > sides,
-            'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle,
-            'RIGHT':  np.sum(segments['RIGHT'] == 255) > sides
-        }
-
-        target_cx = None
-
-        # 4. Prioritise MIDDLE strongly when it exists
-        if segment_density['MIDDLE']:
-            M = cv2.moments(segments['MIDDLE'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_start
-        
-        # Only check sides if MIDDLE is NOT found
-        elif segment_density['LEFT'] and segment_density['RIGHT']:
-            # Both sides visible - use weighted average
-            M_left = cv2.moments(segments['LEFT'])
-            M_right = cv2.moments(segments['RIGHT'])
+            # Detect and reject horizontal/perpendicular lines
+            # A horizontal line will have black pixels spanning most of the width
+            total_black_pixels = np.sum(thresh == 255)
+            horizontal_line_detected = total_black_pixels > (w * 0.3)  # If >30% of width is black
             
-            if M_left["m00"] > 0 and M_right["m00"] > 0:
-                cx_left = M_left["m10"] / M_left["m00"]
-                cx_right = (M_right["m10"] / M_right["m00"]) + m_end
-                target_cx = (cx_left + cx_right) / 2.0
-            
-        elif segment_density['LEFT']:
-            M = cv2.moments(segments['LEFT'])
-            if M["m00"] > 0:
-                target_cx = M["m10"] / M["m00"]
-        
-        elif segment_density['RIGHT']:
-            M = cv2.moments(segments['RIGHT'])
-            if M["m00"] > 0:
-                target_cx = (M["m10"] / M["m00"]) + m_end
+            if horizontal_line_detected:
+                # This is likely a perpendicular T-junction line, ignore it completely
+                # Instead, look higher up in the image where only the forward line exists
+                scan_row = int(h * 0.7)  
+                row_data = gray[scan_row, :]
+                _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
 
-        # 5. Calculate error
-        if target_cx is not None:
-            new_error = float(target_cx - (w / 2)) / (w / 2)
-            if abs(new_error) < 0.08:
-                self.heading_ref = self.current_yaw
+            # 2. Define Custom Segment Boundaries
+            m_start = int((w/2) - ((1/10) * w) / 2)
+            m_end = int((w/2) + ((1/10) * w) / 2)
+
+            segments = {
+                'LEFT':   thresh[0 : m_start],
+                'MIDDLE': thresh[m_start : m_end],
+                'RIGHT':  thresh[m_end : w]
+            }
+
+            # 3. Check which segments have a line
+            sides = m_start * 1/4
+            middle = (m_end - m_start) * 3/4
+            segment_density = {
+                'LEFT':   np.sum(segments['LEFT'] == 255) > sides,
+                'MIDDLE': np.sum(segments['MIDDLE'] == 255) > middle,
+                'RIGHT':  np.sum(segments['RIGHT'] == 255) > sides
+            }
+
+            target_cx = None
+
+            # 4. Prioritise MIDDLE strongly when it exists
+            if segment_density['MIDDLE']:
+                M = cv2.moments(segments['MIDDLE'])
+                if M["m00"] > 0:
+                    target_cx = (M["m10"] / M["m00"]) + m_start
+            
+            # Only check sides if MIDDLE is NOT found
+            elif segment_density['LEFT'] and segment_density['RIGHT']:
+                # Both sides visible - use weighted average
+                M_left = cv2.moments(segments['LEFT'])
+                M_right = cv2.moments(segments['RIGHT'])
+                
+                if M_left["m00"] > 0 and M_right["m00"] > 0:
+                    cx_left = M_left["m10"] / M_left["m00"]
+                    cx_right = (M_right["m10"] / M_right["m00"]) + m_end
+                    target_cx = (cx_left + cx_right) / 2.0
+                
+            elif segment_density['LEFT']:
+                M = cv2.moments(segments['LEFT'])
+                if M["m00"] > 0:
+                    target_cx = M["m10"] / M["m00"]
+            
+            elif segment_density['RIGHT']:
+                M = cv2.moments(segments['RIGHT'])
+                if M["m00"] > 0:
+                    target_cx = (M["m10"] / M["m00"]) + m_end
+
+            # 5. Calculate error
+            if target_cx is not None:
+                new_error = float(target_cx - (w / 2)) / (w / 2)
+                if abs(new_error) < 0.08:
+                    self.heading_ref = self.current_yaw
+                else:
+                    self.heading_ref = None
+                
+                self.line_error = new_error
+                self.f_line_found = True
             else:
-                self.heading_ref = None
-            
-            self.line_error = new_error
-            self.f_line_found = True
-        else:
-            self.f_line_found = False
+                self.f_line_found = False
             
 
     def colour_callback(self, msg):
