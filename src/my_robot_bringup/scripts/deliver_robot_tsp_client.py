@@ -24,6 +24,7 @@ class DeliverobotTSPClient(Node):
 
         # Publish targets for getting the optimised path 
         self.publisher = self.create_publisher(String, 'tsp_targets', 10)
+        
         # Publish the house to go to - to camera follower
         qos = QoSProfile(depth=1)
         qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
@@ -38,7 +39,7 @@ class DeliverobotTSPClient(Node):
         self.current = "PO"
         self.route_index = 0
 
-        # Subscribne to the navigation done to know if the camera follower arrived at the next house/building
+        # Subscribe to the navigation done to know if the camera follower arrived at the next house/building
         self.done_sub = self.create_subscription(
             String,
             'navigation_done',
@@ -89,7 +90,7 @@ class DeliverobotTSPClient(Node):
         msg = String()
         msg.data = json.dumps({'start': start, 'target': target})
         self.nav_publisher.publish(msg)
-        # self.get_logger().info(f"Published navigation command: {start} → {target}")
+        # self.get_logger().info(f"Published navigation command: {start} -> {target}")
 
     def send_next_target(self):
         if self.route_index >= len(self.optimized_route):
