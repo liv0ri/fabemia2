@@ -138,8 +138,6 @@ class CameraFollower(Node):
         )
 
         # Publishes velocity commands to the robot
-        # linear.x - forward/backward
-        # angular.z - left/right
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 1)
         
         qos = QoSProfile(depth=1)
@@ -463,8 +461,8 @@ class CameraFollower(Node):
             horizontal_line_detected = total_black_pixels > (w * 0.3)  # If >30% of width is black
             
             if horizontal_line_detected:
-                # This is likely a perpendicular T-junction line, ignore it completely
-                # Instead, look higher up in the image where only the forward line exists
+                # ignore any intersections and look higher for the main straight line we want
+                #honestly this section may be biasing our search for a straight line since it could be looking at a high diagonal or perpendicular line...
                 scan_row = int(h * 0.7)  
                 row_data = gray[scan_row, :]
                 _, thresh = cv2.threshold(row_data, 50, 255, cv2.THRESH_BINARY_INV)
@@ -647,7 +645,6 @@ class CameraFollower(Node):
             heading_error = self.angle_error(self.heading_ref, self.current_yaw)
             angular += self.heading_kp * heading_error
 
-        
         # Reset integral on zero crossing
         if (self.line_error > 0 and self.last_line_error < 0) or \
         (self.line_error < 0 and self.last_line_error > 0):
@@ -981,7 +978,6 @@ class CameraFollower(Node):
                 if (self.house_visible_right or self.house_visible_left) and not self.house_visible_front and not self.house_reached:
                     # Only correct if we're not super close
                     # This prevents correction when very close
-                    
                     if not self.correcting_to_house:
                         self.get_logger().info(f"House on side but not front - correcting alignment. Right: {self.house_visible_right}, Left: {self.house_visible_left}")
                         self.correcting_to_house = True
