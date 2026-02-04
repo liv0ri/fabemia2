@@ -156,13 +156,13 @@ class CameraFollower(Node):
         self.control_timer = self.create_timer(0.05, self.control_loop)
         # Exact RGB colors from Gazebo diffuse values
         colors = {
-            "HOUSE_1": (97, 63, 0),
+            "HOUSE_1": (255, 0, 229),
             "HOUSE_2": (253, 255, 0),
             "HOUSE_3": (255, 161, 0),
             "HOUSE_4": (252, 149, 209),
             "HOUSE_5": (255, 16, 0),
             "HOUSE_6": (0, 251, 255),
-            "HOUSE_7": (255, 0, 229),
+            "HOUSE_7": (97, 63, 0),
             "HOUSE_8": (120, 0, 255),
             "HOUSE_9": (0, 44, 255),
             "HOUSE_10": (146, 220, 255),
