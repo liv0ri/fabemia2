@@ -18,9 +18,11 @@ class DeliverobotTSPClient(Node):
 
         # Generate 3 random targets
         self.targets = random.sample(HOUSES, 3)
+        
+        # Hardcoded targets for testing
         self.targets[0] = "HOUSE_1"  # Ensure starting point is HOUSE_1
-        self.targets[1] = "HOUSE_3"  # Ensure starting point is HOUSE_1
-        self.targets[2] = "HOUSE_4"  # Ensure starting point is HOUSE_1
+        self.targets[1] = "HOUSE_3"  
+        self.targets[2] = "HOUSE_4"  
         self.get_logger().info(f"Generated targets: {self.targets}")
 
         # Publish targets for getting the optimised path 

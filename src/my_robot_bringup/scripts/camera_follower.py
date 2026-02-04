@@ -86,7 +86,7 @@ class CameraFollower(Node):
         self.correcting_to_house = False
 
         # Stop distance proxy image-based - when house fills 95% of centre
-        # Fine tuned based on experiement with house 2
+        # Fine tuned based on experiment with house 2
         self.stop_ratio = 0.95
         self.obstacle_stop_ratio = 0.70
         self.side_stop_ratio = 0.65
@@ -412,16 +412,13 @@ class CameraFollower(Node):
         
         # If we see magenta in bottom of front camera - approaching intersection
         if (magenta_ratio_roi > 0.30) and (not self.needToClearIntersection and not self.at_intersection):  
-            # 80% threshold in the ROI - we don't want it locking too early, because it may be misaligned. 
-            # OR:
-            # keep perpetuating this value until we either have cleared the intersection - entered go straight at intersection
-            # or if we're at the intersection
+            # Threshold set to 30% to detect the intersection tile early enough to slow down
             self.approaching_intersection = True
             self.get_logger().info(f"Approaching intersection")
             
             self.f_line_found = False
 
-            # 2. Check for black line in TOP MIDDLE to see if path continues forward
+            # Check for black line in TOP MIDDLE to see if path continues forward
             top_limit = int(h * 0.50)
             left_limit = int(w * 0.30)
             right_limit = int(w * 0.70)
@@ -483,7 +480,7 @@ class CameraFollower(Node):
 
         target_cx = None
 
-        # 4. Prioritize MIDDLE strongly when it exists
+        # 4. Prioritise MIDDLE strongly when it exists
         if segment_density['MIDDLE']:
             M = cv2.moments(segments['MIDDLE'])
             if M["m00"] > 0:
@@ -772,7 +769,7 @@ class CameraFollower(Node):
                     return
                 
                 # need to do turn?
-                # NEW: Intersection detection using MAGENTA from middle camera
+                # Intersection detection using MAGENTA from middle camera
                 # Detect intersection and execute turn
                 if self.at_intersection and not self.all_turns_complete and not self.needToClearIntersection:
                     # Step 1: Stop and start alignment

@@ -1,6 +1,6 @@
-#start facing the building
-#turnRight = ?
-# true if you turn right false if you turn left
+# Start facing the building
+# turnRight = ?
+# True if you turn right, False if you turn left
 directions = {
         'PO': {'HOUSE_1': [True, False], 
                'HOUSE_2': [True, True, True, False], 
