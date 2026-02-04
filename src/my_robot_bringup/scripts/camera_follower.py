@@ -78,6 +78,7 @@ class CameraFollower(Node):
         self.house_visible_left = False
         self.house_visible_right = False
         self.house_reached = False
+        self.uncertainty_cardinality = False
         # Count the number of times the house was seen
         # This is done to switch to house detection mode
         self.house_seen_frames = 0
